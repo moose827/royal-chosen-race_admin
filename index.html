@@ -3,41 +3,82 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>風一族週報後台管理系統 v2.1</title>
+<title>風一族週報後台管理系統 - 雲端版</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
+
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
+  /* 這裡保留你原本的 CSS 樣式，為了節省篇幅我簡略說明，請直接套用你原本檔案的 <style> 內容 */
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Noto Sans TC',sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
-  ::-webkit-scrollbar{width:6px;height:6px}
-  ::-webkit-scrollbar-track{background:#1a1a1a}
-  ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
-  input,textarea,select{
-    width:100%;padding:10px 12px;background:#1e1e1e;border:1px solid #2e2e2e;
-    border-radius:6px;color:#e8e8e8;font-size:14px;outline:none;transition:border-color .2s;
-  }
-  input:focus,textarea:focus,select:focus{border-color:#4ade80}
-  textarea{resize:vertical;min-height:60px;line-height:1.6}
-  button{cursor:pointer;font-family:'Noto Sans TC',sans-serif}
-  label{font-size:12px;color:#888;font-weight:500;letter-spacing:.05em;display:block;margin-bottom:5px}
-  
-  .sort-controls { display: flex; gap: 4px; margin-left: 8px; }
-  .sort-btn { 
-    background: #262626; border: 1px solid #333; color: #888; 
-    padding: 4px 8px; border-radius: 4px; font-size: 10px; transition: all 0.2s;
-  }
-  .sort-btn:hover { background: #333; color: #4ade80; border-color: #4ade80; }
-  .sort-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-  
-  .list-item-row { display: flex; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #222; }
+  /* ... (請保留你原本 admin.html 所有的 CSS) ... */
 </style>
 </head>
 <body>
 <div id="root"></div>
+
 <script type="text/babel">
-const {useState, useCallback} = React;
+  const { useState, useEffect, useCallback } = React;
+
+  // 2. 你的 Firebase 配置 (我已經幫你補上 databaseURL)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCotyhW5mvvDE9YYSz2sICwMtrFlia1Tyg",
+    authDomain: "royal-chosen-race.firebaseapp.com",
+    projectId: "royal-chosen-race",
+    databaseURL: "https://royal-chosen-race-default-rtdb.firebaseio.com",
+    storageBucket: "royal-chosen-race.firebasestorage.app",
+    messagingSenderId: "505655650913",
+    appId: "1:505655650913:web:9ee5735807e21faee15820"
+  };
+
+  // 3. 初始化 Firebase
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const db = firebase.database();
+
+  // --- 以下是原本的 React 邏輯，我幫你把儲存位置改成了雲端 ---
+
+  const App = () => {
+    const [data, setData] = useState(null); // 預設空，從雲端抓
+    const [activeSection, setActiveSection] = useState('info');
+    const [toast, setToast] = useState('');
+
+    // 【讀取資料】：當網頁打開時，去 Firebase 抓資料
+    useEffect(() => {
+      const bulletinRef = db.ref('bulletin');
+      bulletinRef.on('value', (snapshot) => {
+        const cloudData = snapshot.val();
+        if (cloudData) {
+          setData(cloudData);
+        } else {
+          // 如果雲端沒資料，就用你原本程式碼裡的預設資料
+          setData(INITIAL_DATA); 
+        }
+      });
+    }, []);
+
+    const showToast = (msg) => {
+      setToast(msg);
+      setTimeout(() => setToast(''), 3000);
+    };
+
+    // 【儲存資料】：按下去後，送到 Firebase 雲端
+    const save = () => {
+      db.ref('bulletin').set(data)
+        .then(() => showToast('✅ 雲端同步成功！'))
+        .catch((err) => showToast('❌ 儲存失敗：' + err.message));
+    };
+
+    if (!data) return <div style={{padding:'20px'}}>連線中...</div>;
+
+    // ... (這裡接你原本 admin.html 裡面其餘的元件邏輯，如 renderSection, Btn 等) ...
+    // 注意：把原本程式碼裡的 localStorage.getItem 或 setItem 刪除即可
 
 const DEFAULT_DATA = {
   "bulletinDate": "2026-04-26",
