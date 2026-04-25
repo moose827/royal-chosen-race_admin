@@ -389,81 +389,84 @@ function App() {
         </Card>
       );
 
-      case 'groups': return (
-        <div>
-          <div style={{background:'#0a0a0a', padding:'4px', borderRadius:'8px', display:'flex', gap:'4px', marginBottom:'16px', border:'1px solid #222'}}>
-            {['weekday','sunday','special','overseas'].map(t => (
-              <button key={t} onClick={()=>setGroupTab(t)} style={{
-                flex:1, padding:'8px', border:'none', borderRadius:'6px', cursor:'pointer',
-                background: groupTab===t ? '#1e1e1e' : 'transparent',
-                color: groupTab===t ? '#4ade80' : '#666', fontSize:'13px'
-              }}>{t==='weekday'?'平日':t==='sunday'?'主日':t==='special'?'特色':'海外'}</button>
+      case 'groups': {
+        // 1. 安全獲取當前列表，加入 || [] 避免 Firebase 刪除空節點導致 undefined 崩潰
+        const currentList = groupTab === 'overseas' ? (data.overseas || []) : (data.groups?.[groupTab] || []);
+        const currentPath = groupTab === 'overseas' ? 'overseas' : `groups.${groupTab}`;
+
+        return (
+          <div>
+            <div style={{background:'#0a0a0a', padding:'4px', borderRadius:'8px', display:'flex', gap:'4px', marginBottom:'16px', border:'1px solid #222'}}>
+              {['weekday','sunday','special','overseas'].map(t => (
+                <button key={t} onClick={()=>setGroupTab(t)} style={{
+                  flex:1, padding:'8px', border:'none', borderRadius:'6px', cursor:'pointer',
+                  background: groupTab===t ? '#1e1e1e' : 'transparent',
+                  color: groupTab===t ? '#4ade80' : '#666', fontSize:'13px'
+                }}>{t==='weekday'?'平日':t==='sunday'?'主日':t==='special'?'特色':'海外'}</button>
+              ))}
+            </div>
+            <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'10px'}}>
+              <Btn size="sm" variant="primary" onClick={()=>{
+                const newItem = groupTab === 'overseas' 
+                  ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} 
+                  : {name:'', time:'', leader:'', loc:''};
+                update(currentPath, [...currentList, newItem]);
+              }}>+ 新增</Btn>
+            </div>
+            {currentList.map((g, idx)=>(
+              <Card key={idx}>
+                <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+                  <div style={{display:'flex', alignItems:'center'}}>
+                    <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}># {idx+1} 排序</span>
+                    <SortControls 
+                      isFirst={idx===0} 
+                      isLast={idx===currentList.length-1} 
+                      onMoveUp={()=>moveItem(currentPath, idx, idx-1)} 
+                      onMoveDown={()=>moveItem(currentPath, idx, idx+1)} 
+                    />
+                  </div>
+                  <Btn size="sm" variant="danger" onClick={()=>{
+                    const newList = currentList.filter((_,i)=>i!==idx);
+                    update(currentPath, newList);
+                  }}>刪除</Btn>
+                </div>
+                
+                {/* 2. 簡化 onChange 寫法，不再手動跑迴圈，直接使用展開運算子 */}
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                  <Field label="小組名稱"><input value={g.name || ''} onChange={e=>{
+                     const newList = [...currentList];
+                     newList[idx] = {...newList[idx], name: e.target.value};
+                     update(currentPath, newList);
+                  }}/></Field>
+                  <Field label="帶領人 / 牧師"><input value={g.leader || ''} onChange={e=>{
+                     const newList = [...currentList];
+                     newList[idx] = {...newList[idx], leader: e.target.value};
+                     update(currentPath, newList);
+                  }}/></Field>
+                  <Field label="時間"><input value={g.time || ''} onChange={e=>{
+                     const newList = [...currentList];
+                     newList[idx] = {...newList[idx], time: e.target.value};
+                     update(currentPath, newList);
+                  }}/></Field>
+                  <Field label="地點"><input value={g.loc || ''} onChange={e=>{
+                     const newList = [...currentList];
+                     newList[idx] = {...newList[idx], loc: e.target.value};
+                     update(currentPath, newList);
+                  }}/></Field>
+                  
+                  {/* 3. 如果是海外小組，額外顯示國旗 Emoji 編輯欄位 */}
+                  {groupTab === 'overseas' && (
+                    <Field label="國旗 (Emoji)"><input value={g.flag || ''} placeholder="例如: 🇬🇧" onChange={e=>{
+                       const newList = [...currentList];
+                       newList[idx] = {...newList[idx], flag: e.target.value};
+                       update(currentPath, newList);
+                    }}/></Field>
+                  )}
+                </div>
+              </Card>
             ))}
           </div>
-          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'10px'}}>
-            <Btn size="sm" variant="primary" onClick={()=>{
-              const path = groupTab==='overseas' ? 'overseas' : `groups.${groupTab}`;
-              const list = groupTab==='overseas' ? data.overseas : data.groups[groupTab];
-              const newItem = groupTab==='overseas' ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} : {name:'', time:'', leader:'', loc:''};
-              update(path, [...list, newItem]);
-            }}>+ 新增</Btn>
-          </div>
-          {(groupTab==='overseas' ? data.overseas : data.groups[groupTab]).map((g, idx)=>(
-            <Card key={idx}>
-              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-                <div style={{display:'flex', alignItems:'center'}}>
-                  <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}># {idx+1} 排序</span>
-                  <SortControls 
-                    isFirst={idx===0} 
-                    isLast={idx===(groupTab==='overseas' ? data.overseas : data.groups[groupTab]).length-1} 
-                    onMoveUp={()=>moveItem(groupTab==='overseas'?'overseas':`groups.${groupTab}`, idx, idx-1)} 
-                    onMoveDown={()=>moveItem(groupTab==='overseas'?'overseas':`groups.${groupTab}`, idx, idx+1)} 
-                  />
-                </div>
-                <Btn size="sm" variant="danger" onClick={()=>{
-                  const path = groupTab==='overseas' ? 'overseas' : `groups.${groupTab}`;
-                  const list = (groupTab==='overseas' ? data.overseas : data.groups[groupTab]).filter((_,i)=>i!==idx);
-                  update(path, list);
-                }}>刪除</Btn>
-              </div>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-                <Field label="小組名稱"><input value={g.name} onChange={e=>{
-                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
-                   const n = JSON.parse(JSON.stringify(data));
-                   const keys = path.split('.');
-                   let list = n;
-                   for(let k of keys) list = list[k];
-                   list[idx].name = e.target.value; setData(n);
-                }}/></Field>
-                <Field label="帶領人 / 牧師"><input value={g.leader} onChange={e=>{
-                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
-                   const n = JSON.parse(JSON.stringify(data));
-                   const keys = path.split('.');
-                   let list = n;
-                   for(let k of keys) list = list[k];
-                   list[idx].leader = e.target.value; setData(n);
-                }}/></Field>
-                <Field label="時間"><input value={g.time} onChange={e=>{
-                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
-                   const n = JSON.parse(JSON.stringify(data));
-                   const keys = path.split('.');
-                   let list = n;
-                   for(let k of keys) list = list[k];
-                   list[idx].time = e.target.value; setData(n);
-                }}/></Field>
-                <Field label="地點"><input value={g.loc} onChange={e=>{
-                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
-                   const n = JSON.parse(JSON.stringify(data));
-                   const keys = path.split('.');
-                   let list = n;
-                   for(let k of keys) list = list[k];
-                   list[idx].loc = e.target.value; setData(n);
-                }}/></Field>
-              </div>
-            </Card>
-          ))}
-        </div>
-      );
+        );    
 
       case 'announcements': return (
         <div>
