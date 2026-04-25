@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>風一族週報後台管理系統 v2.1 - 雲端版</title>
+<title>風一族週報後台管理系統 v2.2 (雲端同步版)</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
@@ -41,9 +41,9 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState, useCallback, useEffect} = React;
+const {useState, useEffect, useCallback} = React;
 
-// --- Firebase 配置區 ---
+// 2. 填入你的 Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyCotyhW5mvvDE9YYSz2sICwMtrFlia1Tyg",
   authDomain: "royal-chosen-race.firebaseapp.com",
@@ -54,31 +54,108 @@ const firebaseConfig = {
   appId: "1:505655650913:web:9ee5735807e21faee15820"
 };
 
-// 初始化 Firebase (避免重複初始化)
+// 初始化 Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
 
 const DEFAULT_DATA = {
-  bulletinDate: "2026-12-26",
-  weekNumber: "第二週",
-  vision: "敬畏神，一無所懼",
-  theme: {title: "生命之道", speaker: "蔡瑋和 牧師", moderator: "游晴雅 傳道", scripture: "馬太福音 28/19-20"},
-  sermonOutline: [
-    {title: "一、段落標題", content: ["內容要點 1", "內容要點 2"]}
-  ],
-  songs: {worship: ["敬拜詩歌 A"], response: ["回應詩歌 B"]},
-  schedule: [{start: "09:30", end: "09:50", task: "敬拜讚美"}],
-  groups: {
-    weekday: [{name: "風道小組", time: "週一 17:30", leader: "林明道", loc: "北科大"}],
-    sunday: [{name: "風楚小組", time: "週日 11:30", leader: "葉子楚", loc: "北科大"}],
-    special: [{name: "兒童主日學", time: "週日 10:00", leader: "何宜瑾 牧師", loc: "馬可樓"}],
-    overseas: [{name: "分會名稱", leader: "牧師名稱", time: "週日 15:00", loc: "地址", flag: "🇬🇧"}]
-  },
-  announcements: [{id: 1, title: "標題", date: "5/7", detail: "詳情內容"}],
-  offering: {name: "社團法人中華基督教風一族職場福音協會", bank: "華南銀行", account: "101-10-007255-0"},
-  office: {name: "馬可樓辦公室", phone: "(02) 8772-7857", address: "台北市大安區"}
+    "bulletinDate": "2026-04-26",
+    "weekNumber": "第四週",
+    "vision": "敬畏神，一無所懼",
+    "theme": {
+        "title": "神坐著為王： 一無所懼，一無所缺",
+        "speaker": "葉志偉 牧師",
+        "moderator": "李宜潔 傳道",
+        "scripture": "馬太福音 28/19-20，馬可福音 16/20，路加福音 24/50-53，約翰福音 21/24-25，使徒行傳 1/6-11、4/11-13、5/29，哥林多後書 11/23-29，提摩太前書 1/13-16，提摩太後書 4/7-8，啟示錄 21/3-4、啟示錄 22/20-21"
+    },
+    "sermonOutline": [
+        {
+            "title": "一、一群加利利無知的小民",
+            "content": [
+                "1. 在耶穌復活升天後\n• 個個充滿智慧和膽量\n• 勇敢果斷地宣告：除祂以外別無拯救\n• 直言順從神，不順從人是應當的",
+                "2. 無知的小民成為耶和華的軍隊\n• 神蹟奇事隨著他們，一個生來是瘸腿的起來行走\n• 聖靈充滿，放膽講神的道\n• 提醒聖徒要謹守、儆醒：仇敵如同吼叫的獅子，遍地遊行尋找可吞吃的人"
+            ]
+        },
+        {
+            "title": "二、一個從前是褻瀆神、逼迫人、侮慢人的自義者",
+            "content": [
+                "1. 在大馬色途中遇見主後\n• 捨身忘死的追隨主耶穌基督\n• 多受勞苦、下監牢、受鞭打、被石頭打、遇船壞、遭假弟兄的危險、又飢又渴、赤身露體、冒死…\n• 認識自己是罪人中的罪魁",
+                "2. 一生為神所用，成為神聰明的工頭\n• 打過那美好的仗\n• 跑盡當跑的路\n• 守住所信的道"
+            ]
+        },
+        {
+            "title": "三、加利利無知的小民和敵擋神的自義者",
+            "content": [
+                "1. 知道所信的主已經復活升上高天，賜下聖靈",
+                "2. 神坐著為王，我們一無所懼，一無所缺",
+                "3. 勇往直前，完成主的大使命"
+            ]
+        }
+    ],
+    "songs": {
+        "worship": ["獻上讚美祭", "任何環境不要懼怕"],
+        "response": ["直到主耶穌再來時候"]
+    },
+    "schedule": [
+        { "start": "09:30", "end": "09:50", "task": "敬拜讚美" },
+        { "start": "09:50", "end": "09:55", "task": "教會消息" },
+        { "start": "09:55", "end": "10:45", "task": "講台信息" },
+        { "start": "10:45", "end": "11:30", "task": "祝福代禱" }
+    ],
+    "groups": {
+        "weekday": [
+            { "name": "風道小組", "time": "週一 17:30-19:00", "leader": "林明道", "loc": "北科大" },
+            { "name": "風儒小組", "time": "週一 19:30-20:30", "leader": "潘瑩玲", "loc": "請洽小組長" },
+            { "name": "風炎小組", "time": "週二 10:00-12:00", "leader": "郭政炎", "loc": "馬可樓" },
+            { "name": "風利小組", "time": "週二 17:00-18:30", "leader": "陳怡利", "loc": "北科大" },
+            { "name": "風發小組", "time": "週三 12:30-13:30", "leader": "常立欣", "loc": "請洽小組長" },
+            { "name": "風頌小組", "time": "週三 18:00-19:30", "leader": "林師頌", "loc": "北科大" },
+            { "name": "風欣小組", "time": "週三 19:30-21:00", "leader": "廖浚欣", "loc": "馬可樓" },
+            { "name": "風青小組", "time": "週四 12:00-15:00", "leader": "蔡青樺", "loc": "馬可樓" },
+            { "name": "風光小組", "time": "週四 17:00-18:30", "leader": "廖非非", "loc": "請洽小組長" },
+            { "name": "風冠小組", "time": "週四 19:30-21:00", "leader": "謝冠群", "loc": "馬可樓" },
+            { "name": "風鈞小組", "time": "週五 12:00-13:00", "leader": "蔡惟鈞", "loc": "請洽小組長" }
+        ],
+        "sunday": [
+            { "name": "風楚小組", "time": "週日 11:30-12:30", "leader": "葉子楚", "loc": "北科大" },
+            { "name": "風玲小組", "time": "週日 11:30-12:30", "leader": "林雯玲", "loc": "馬可樓" },
+            { "name": "風吉小組", "time": "週日 11:30-12:30", "leader": "李明吉", "loc": "馬可樓" },
+            { "name": "風誠小組", "time": "週日 11:30-12:30", "leader": "江長誠", "loc": "北科大" },
+            { "name": "風娟小組", "time": "週日 11:30-12:30", "leader": "林美娟", "loc": "馬可樓" },
+            { "name": "風潔小組", "time": "週日 11:30-12:30", "leader": "Hannah", "loc": "北科大" },
+            { "name": "風豪小組", "time": "週日 11:30-12:30", "leader": "梁君豪", "loc": "馬可樓" },
+            { "name": "風鳳小組", "time": "週日 11:30-12:30", "leader": "陳秀鳳", "loc": "請洽小組長" }
+        ],
+        "special": [
+            { "name": "風大小組(大專)", "time": "週日 12:00-13:30", "leader": "陳怡伶", "loc": "請洽小組長" },
+            { "name": "風潔小組 (兒少)", "time": "週日 12:00-13:30", "leader": "李宜潔", "loc": "請洽小組長" },
+            { "name": "兒童主日學", "time": "週日 10:00-11:00", "leader": "何宜瑾 牧師", "loc": "請洽小組長" },
+            { "name": "銀寶團契", "time": "雙週三 14:00-15:30", "leader": "張麗明 姐妹", "loc": "請洽小組長" }
+        ]
+    },
+    "overseas": [
+        { "name": "英國格拉斯哥市分會", "leader": "陳林晶亮 牧師", "time": "週日 15:00", "loc": "Allander Evangelica Church, Glasgow", "flag": "🇬🇧" },
+        { "name": "越南胡志明市分會", "leader": "蔣小燕 牧師", "time": "週日 09:30", "loc": "55 Nguyễn Chí Thanh, Vietnam", "flag": "🇻🇳" }
+    ],
+    "announcements": [
+        { "id": 1, "title": "葉牧師的勉勵", "date": "即日起", "detail": "請弟兄姊妹預備心領受啟示錄信息，迎接神要給我們的啟示，完成神的旨意。" },
+        { "id": 2, "title": "季同工會通知 (登記截止)", "date": "5/1 (五) 前", "detail": "時間： 5/7（四）晚上7:00\n地點： 馬可樓\n請各位牧者撥空出席；歡迎小組長列席參加，備有晚餐，請於5/1前向怡伶傳道登記。" },
+        { "id": 3, "title": "母親節主日聚會", "date": "5/10 (日)", "detail": "時間： 5/10（日）早上9:30-11:00\n地點： 台北科技大學·宏裕科技大樓·B2國際會議廳（捷運忠孝新生站4號出口）\n敬邀我們所愛的母親們參加母親節主日聚會，我們已預備精美禮物、詩歌與信息，希望媽媽們在這一天，領受滿滿的祝福！" },
+        { "id": 4, "title": "風一族職場教會第二屆桌球賽 (報名截止)", "date": "5/10 (日) 前", "detail": "比賽日期： 預賽-5/24 PM12:30、決賽-5/31 PM12:30\n比賽地點： 馬可樓\n參賽對象： 歡迎弟兄姊妹及親友，以及曾來過教會的新朋友一同參與\n報名方式： 請於5/10前，向各小組長報名參加。" },
+        { "id": 5, "title": "聖經培訓課程·啟示錄 (報名截止)", "date": "5/19 (二) 前", "detail": "地點： 馬可樓\n時間： 週六下午2:00-4:00，共12堂\n報名： 請於5/19前，向各小組長報名參加。\n說明： 平安！在末世動盪的世界中，神的話安定在天；2026下半年，葉志偉主任牧師將帶領我們查讀《啟示錄》，邀請您一同來領受～「看哪，我必快來！凡遵守這書上預言的有福了！」" }
+    ],
+    "offering": {
+        "name": "社團法人中華基督教風一族職場福音協會",
+        "bank": "華南銀行 (008) 儲蓄分行",
+        "account": "101-10-007255-0"
+    },
+    "office": {
+        "name": "馬可樓辦公室",
+        "phone": "(02) 8772-7857",
+        "address": "台北市大安區市民大道三段 148 號 4 樓"
+    }
 };
 
 // 通用按鈕
@@ -107,32 +184,44 @@ const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700
 const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
 
 function App() {
-  const [data, setData] = useState(null); // 改為 null，先從雲端抓取
+  const [data, setData] = useState(null); // 改為 null 等待連線
   const [activeSection, setActiveSection] = useState('basic');
   const [groupTab, setGroupTab] = useState('weekday');
   const [toast, setToast] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 2000); };
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
-  // 【核心功能】：從 Firebase 讀取資料
+  // 3. 監聽 Firebase 雲端資料 (與 index.html 通訊關鍵)
   useEffect(() => {
     const bulletinRef = db.ref('bulletin_data');
     bulletinRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
       if (cloudData) {
         setData(cloudData);
+        setIsConnected(true);
       } else {
-        // 如果雲端完全沒資料，就使用預設值
         setData(DEFAULT_DATA);
+        setIsConnected(true);
       }
     });
+    return () => bulletinRef.off();
   }, []);
 
-  // 【核心功能】：儲存資料到 Firebase
-  const save = () => {
+  // 4. 儲存至雲端 Firebase
+  const save = async () => {
+    setIsSaving(true);
     db.ref('bulletin_data').set(data)
-      .then(() => showToast('✓ 雲端同步儲存成功'))
-      .catch((err) => showToast('✕ 儲存失敗：' + err.message));
+      .then(() => {
+        showToast('🚀 儲存成功！手機版已即時更新');
+      })
+      .catch((err) => {
+        showToast('❌ 儲存失敗：' + err.message);
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
   };
 
   // 更新邏輯
@@ -147,6 +236,7 @@ function App() {
     });
   };
 
+  // 自動換算日期
   const calculateWeekNumber = () => {
     const d = new Date(data.bulletinDate);
     if (isNaN(d.getTime())) return showToast('日期格式錯誤');
@@ -157,6 +247,7 @@ function App() {
     showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
   };
 
+  // 通用移動功能
   const moveItem = (path, from, to) => {
     setData(prev => {
       const next = JSON.parse(JSON.stringify(prev));
@@ -176,7 +267,7 @@ function App() {
   ];
 
   const renderSection = () => {
-    if (!data) return <div style={{color:'#888'}}>正在從雲端讀取資料...</div>;
+    if (!data) return <div style={{padding:'20px'}}>連線中...</div>;
     
     switch(activeSection) {
       case 'basic': return (
@@ -334,25 +425,33 @@ function App() {
                 <Field label="小組名稱"><input value={g.name} onChange={e=>{
                    const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
                    const n = JSON.parse(JSON.stringify(data));
-                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   const keys = path.split('.');
+                   let list = n;
+                   for(let k of keys) list = list[k];
                    list[idx].name = e.target.value; setData(n);
                 }}/></Field>
                 <Field label="帶領人 / 牧師"><input value={g.leader} onChange={e=>{
                    const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
                    const n = JSON.parse(JSON.stringify(data));
-                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   const keys = path.split('.');
+                   let list = n;
+                   for(let k of keys) list = list[k];
                    list[idx].leader = e.target.value; setData(n);
                 }}/></Field>
                 <Field label="時間"><input value={g.time} onChange={e=>{
                    const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
                    const n = JSON.parse(JSON.stringify(data));
-                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   const keys = path.split('.');
+                   let list = n;
+                   for(let k of keys) list = list[k];
                    list[idx].time = e.target.value; setData(n);
                 }}/></Field>
                 <Field label="地點"><input value={g.loc} onChange={e=>{
                    const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
                    const n = JSON.parse(JSON.stringify(data));
-                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   const keys = path.split('.');
+                   let list = n;
+                   for(let k of keys) list = list[k];
                    list[idx].loc = e.target.value; setData(n);
                 }}/></Field>
               </div>
@@ -431,9 +530,16 @@ function App() {
       <div style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
-          <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.1 (雲端版)</div>
+          <div style={{display:'flex', flexDirection:'column'}}>
+            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.2</div>
+            <div style={{fontSize:'11px', color: isConnected ? '#4ade80' : '#888'}}>
+                {isConnected ? '● 已連線雲端' : '○ 載入中...'}
+            </div>
+          </div>
         </div>
-        <Btn variant="primary" onClick={save}>儲存所有變更 (雲端同步)</Btn>
+        <Btn variant="primary" onClick={save} disabled={isSaving || !isConnected}>
+            {isSaving ? '儲存中...' : '儲存至雲端'}
+        </Btn>
       </div>
 
       <div style={{display:'flex', flex:1}}>
@@ -454,7 +560,7 @@ function App() {
           <div style={{maxWidth:'800px', margin:'0 auto'}}>{renderSection()}</div>
         </div>
       </div>
-      {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000}}>{toast}</div>}
+      {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.5)'}}>{toast}</div>}
     </div>
   );
 }
