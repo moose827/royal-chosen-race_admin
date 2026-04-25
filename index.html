@@ -36,6 +36,54 @@
   .sort-btn:disabled { opacity: 0.2; cursor: not-allowed; }
   
   .list-item-row { display: flex; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #222; }
+
+  /* ================= A4 預覽與列印樣式 ================= */
+  .a4-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+  }
+  .a4-page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    color: #000;
+    padding: 15mm 12mm;
+    box-sizing: border-box;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    font-family: 'Noto Sans TC', sans-serif;
+    position: relative;
+    line-height: 1.5;
+  }
+  
+  /* 針對列印時的特殊設定 */
+  @media print {
+    @page { size: A4 portrait; margin: 0; }
+    body, html { background: white; margin: 0; padding: 0; }
+    
+    /* 隱藏不需要列印的後台 UI */
+    .no-print { display: none !important; }
+    
+    /* 移除捲動與背景設定，確保能完整印出多頁 */
+    #root > div { display: block !important; }
+    #root > div > div:last-child { display: block !important; padding: 0 !important; overflow: visible !important; }
+    
+    .a4-container { gap: 0; display: block; }
+    .a4-page { 
+      box-shadow: none; 
+      page-break-after: always; /* 確保每一張 A4 獨立一頁 */
+      page-break-inside: avoid;
+    }
+  }
+
+  /* 以下為簡易的週報內容排版樣式 (可依需求自行微調) */
+  .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid #003366; padding-bottom: 10px; margin-bottom: 15px; }
+  .pdf-title { color: #003366; font-size: 24px; font-weight: bold; }
+  .pdf-section-title { background: #003366; color: white; padding: 4px 8px; font-weight: bold; font-size: 14px; margin: 15px 0 10px 0; display: inline-block;}
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pdf-table th, .pdf-table td { border: 1px solid #666; padding: 6px; text-align: left; }
+  .pdf-list { font-size: 13px; margin-left: 20px; padding-left: 0; }
 </style>
 </head>
 <body>
@@ -183,6 +231,130 @@ const Card = ({children}) => <div style={{background:'#161616',border:'1px solid
 const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700',color:'#4ade80',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'16px'}}>{children}</h3>;
 const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
 
+// 預覽與列印版面元件
+const BulletinPreview = ({ data }) => {
+  return (
+    <div className="a4-container">
+      {/* ===== 第一頁 (正面) ===== */}
+      <div className="a4-page">
+        <div className="pdf-header">
+          <div>
+            <div className="pdf-title">風一族職場教會</div>
+            <div style={{ fontSize: '12px', color: '#555' }}>年度異象：{data.vision}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: 'bold' }}>{data.bulletinDate}</div>
+            <div style={{ fontSize: '14px' }}>{data.weekNumber}</div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h2 style={{ margin: '0 0 10px 0', color: '#003366' }}>主題：{data.theme.title}</h2>
+          <div style={{ fontSize: '14px' }}>講員：{data.theme.speaker} | 司會：{data.theme.moderator}</div>
+          <div style={{ fontSize: '12px', marginTop: '5px' }}>經文：{data.theme.scripture}</div>
+        </div>
+
+        <div className="pdf-section-title">信息大綱</div>
+        {data.sermonOutline.map((item, idx) => (
+          <div key={idx} style={{ marginBottom: '15px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#003366' }}>{item.title}</div>
+            {item.content.map((c, ci) => (
+              <div key={ci} style={{ fontSize: '13px', marginLeft: '15px', whiteSpace: 'pre-line', marginTop: '4px' }}>
+                {c}
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <div className="pdf-section-title">聚會流程</div>
+            <table className="pdf-table">
+              <tbody>
+                {data.schedule.map((item, idx) => (
+                  <tr key={idx}>
+                    <td width="100">{item.start}-{item.end}</td>
+                    <td>{item.task}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div className="pdf-section-title">敬拜詩歌</div>
+            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>1. 敬拜讚美</div>
+            <ol className="pdf-list">
+              {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+            </ol>
+            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>2. 回應詩歌</div>
+            <ol className="pdf-list">
+              {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== 第二頁 (背面) ===== */}
+      <div className="a4-page">
+        <div className="pdf-section-title">教會消息</div>
+        {data.announcements.map((a, idx) => (
+          <div key={idx} style={{ marginBottom: '12px', fontSize: '13px' }}>
+            <span style={{ fontWeight: 'bold' }}>{idx + 1}. {a.title} ({a.date})</span>
+            <div style={{ whiteSpace: 'pre-line', marginLeft: '15px', marginTop: '2px' }}>{a.detail}</div>
+          </div>
+        ))}
+
+        <div className="pdf-section-title">教會小組 / 特色團契</div>
+        <table className="pdf-table">
+          <thead>
+            <tr style={{ background: '#f0f0f0' }}>
+              <th>小組名稱</th><th>聚會時間</th><th>帶領人</th><th>地點</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.groups.weekday.map((g, i) => (
+              <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+            ))}
+            {data.groups.sunday.map((g, i) => (
+              <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+            ))}
+            {data.groups.special.map((g, i) => (
+              <tr key={'sp'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <div className="pdf-section-title">海外分會</div>
+            {data.overseas.map((o, i) => (
+               <div key={i} style={{ fontSize: '13px', marginBottom: '8px' }}>
+                 <div style={{ fontWeight: 'bold' }}>{o.flag} {o.name}</div>
+                 <div>牧師：{o.leader} | 時間：{o.time}</div>
+                 <div>地點：{o.loc}</div>
+               </div>
+            ))}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div className="pdf-section-title">奉獻與聯絡資訊</div>
+            <div style={{ fontSize: '13px', marginBottom: '10px', padding: '10px', border: '1px solid #ccc', background: '#f9f9f9' }}>
+              <div style={{ fontWeight: 'bold' }}>奉獻帳戶資訊</div>
+              戶名：{data.offering.name}<br/>
+              銀行：{data.offering.bank}<br/>
+              帳號：{data.offering.account}
+            </div>
+            <div style={{ fontSize: '13px' }}>
+              <div style={{ fontWeight: 'bold' }}>聯絡我們 - {data.office.name}</div>
+              電話：{data.office.phone}<br/>
+              地址：{data.office.address}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [data, setData] = useState(null); // 改為 null 等待連線
   const [activeSection, setActiveSection] = useState('basic');
@@ -268,7 +440,8 @@ function App() {
     {id:'schedule',label:'聚會流程'}, 
     {id:'announcements',label:'教會公告'},
     {id:'groups',label:'小組資訊'},
-    {id:'contact',label:'聯絡奉獻'}
+    {id:'contact',label:'聯絡奉獻'},
+    {id:'preview',label:'📄 預覽與列印'}
   ];
 
   const renderSection = () => {
@@ -467,7 +640,7 @@ function App() {
             ))}
           </div>
         );
-      }    
+      }   
 
       case 'announcements': return (
         <div>
@@ -530,13 +703,24 @@ function App() {
           </Card>
         </div>
       );
+      
+      case 'preview': return (
+        <div>
+           <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+             <span style={{ color: '#aaa' }}>💡 提示：請確保瀏覽器列印設定中，紙張大小為 A4、無邊界 (或預設邊界)。</span>
+             <Btn variant="primary" onClick={() => window.print()}>🖨️ 一鍵列印 PDF</Btn>
+           </div>
+           <BulletinPreview data={data} />
+        </div>
+      );
+
       default: return null;
     }
   };
 
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
-      <div style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
+      <div className="no-print" style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
           <div style={{display:'flex', flexDirection:'column'}}>
@@ -552,7 +736,7 @@ function App() {
       </div>
 
       <div style={{display:'flex', flex:1}}>
-        <div style={{width:'180px', background:'#0d0d0d', borderRight:'1px solid #1a1a1a', padding:'16px 12px'}}>
+        <div className="no-print" style={{width:'180px', background:'#0d0d0d', borderRight:'1px solid #1a1a1a', padding:'16px 12px'}}>
           {navItems.map(item=>(
             <button key={item.id} onClick={()=>setActiveSection(item.id)} style={{
               width:'100%', textAlign:'left', padding:'10px 12px', borderRadius:'7px', border:'none',
