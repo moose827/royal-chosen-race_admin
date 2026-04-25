@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>風一族週報後台管理系統 v2.1</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans TC',sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:#1a1a1a}
+  ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+  input,textarea,select{
+    width:100%;padding:10px 12px;background:#1e1e1e;border:1px solid #2e2e2e;
+    border-radius:6px;color:#e8e8e8;font-size:14px;outline:none;transition:border-color .2s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:#4ade80}
+  textarea{resize:vertical;min-height:60px;line-height:1.6}
+  button{cursor:pointer;font-family:'Noto Sans TC',sans-serif}
+  label{font-size:12px;color:#888;font-weight:500;letter-spacing:.05em;display:block;margin-bottom:5px}
+  
+  .sort-controls { display: flex; gap: 4px; margin-left: 8px; }
+  .sort-btn { 
+    background: #262626; border: 1px solid #333; color: #888; 
+    padding: 4px 8px; border-radius: 4px; font-size: 10px; transition: all 0.2s;
+  }
+  .sort-btn:hover { background: #333; color: #4ade80; border-color: #4ade80; }
+  .sort-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+  
+  .list-item-row { display: flex; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #222; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useCallback} = React;
+
+const DEFAULT_DATA = {
+  bulletinDate: "2026-12-26",
+  weekNumber: "第二週",
+  vision: "敬畏神，一無所懼",
+  theme: {title: "生命之道", speaker: "蔡瑋和 牧師", moderator: "游晴雅 傳道", scripture: "馬太福音 28/19-20"},
+  sermonOutline: [
+    {title: "一、段落標題", content: ["內容要點 1", "內容要點 2"]}
+  ],
+  songs: {worship: ["敬拜詩歌 A"], response: ["回應詩歌 B"]},
+  schedule: [{start: "09:30", end: "09:50", task: "敬拜讚美"}],
+  groups: {
+    weekday: [{name: "風道小組", time: "週一 17:30", leader: "林明道", loc: "北科大"}],
+    sunday: [{name: "風楚小組", time: "週日 11:30", leader: "葉子楚", loc: "北科大"}],
+    special: [{name: "兒童主日學", time: "週日 10:00", leader: "何宜瑾 牧師", loc: "馬可樓"}],
+    overseas: [{name: "分會名稱", leader: "牧師名稱", time: "週日 15:00", loc: "地址", flag: "🇬🇧"}]
+  },
+  announcements: [{id: 1, title: "標題", date: "5/7", detail: "詳情內容"}],
+  offering: {name: "社團法人中華基督教風一族職場福音協會", bank: "華南銀行", account: "101-10-007255-0"},
+  office: {name: "馬可樓辦公室", phone: "(02) 8772-7857", address: "台北市大安區"}
+};
+
+// 通用按鈕
+const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false}) => {
+  const base = "inline-flex items-center gap-2 rounded-lg font-medium transition-all duration-150 border";
+  const variants = {
+    default: "bg-transparent border-[#2e2e2e] text-[#ccc] hover:border-[#444] hover:text-white",
+    primary: "bg-[#4ade80] border-[#4ade80] text-[#0f0f0f] hover:bg-[#22c55e]",
+    danger: "bg-transparent border-[#ef4444]/50 text-[#ef4444] hover:bg-[#ef4444]/10",
+    ghost: "bg-transparent border-transparent text-[#888] hover:text-[#ccc]"
+  };
+  const sizes = {sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-base"};
+  return <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
+};
+
+// 排序按鈕組件
+const SortControls = ({onMoveUp, onMoveDown, isFirst, isLast}) => (
+  <div className="sort-controls">
+    <button className="sort-btn" onClick={onMoveUp} disabled={isFirst} title="上移">▲</button>
+    <button className="sort-btn" onClick={onMoveDown} disabled={isLast} title="下移">▼</button>
+  </div>
+);
+
+const Card = ({children}) => <div style={{background:'#161616',border:'1px solid #222',borderRadius:'10px',padding:'20px',marginBottom:'16px'}}>{children}</div>;
+const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700',color:'#4ade80',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'16px'}}>{children}</h3>;
+const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
+
+function App() {
+  const [data, setData] = useState(() => {
+    const s = localStorage.getItem('bulletin_data');
+    return s ? JSON.parse(s) : DEFAULT_DATA;
+  });
+  const [activeSection, setActiveSection] = useState('basic');
+  const [groupTab, setGroupTab] = useState('weekday');
+  const [toast, setToast] = useState(null);
+  const [jsonMode, setJsonMode] = useState(false);
+  const [jsonText, setJsonText] = useState('');
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 2000); };
+  const save = () => { localStorage.setItem('bulletin_data', JSON.stringify(data)); showToast('✓ 資料已儲存'); };
+
+  // 更新邏輯
+  const update = (path, value) => {
+    setData(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const keys = path.split('.');
+      let obj = next;
+      for (let i=0; i<keys.length-1; i++) obj = obj[keys[i]];
+      obj[keys[keys.length-1]] = value;
+      return next;
+    });
+  };
+
+  // 1. 自動換算日期
+  const calculateWeekNumber = () => {
+    const d = new Date(data.bulletinDate);
+    if (isNaN(d.getTime())) return showToast('日期格式錯誤');
+    const day = d.getDate();
+    const weekIdx = Math.ceil(day / 7);
+    const chineseWeeks = ["第一週", "第二週", "第三週", "第四週", "第五週"];
+    update('weekNumber', chineseWeeks[weekIdx-1] || "第一週");
+    showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
+  };
+
+  // 通用移動功能
+  const moveItem = (path, from, to) => {
+    setData(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const keys = path.split('.');
+      let list = next;
+      for (let k of keys) list = list[k];
+      const item = list.splice(from, 1)[0];
+      list.splice(to, 0, item);
+      return next;
+    });
+  };
+
+  const navItems = [
+    {id:'basic',label:'基本資訊'}, {id:'theme',label:'主題信息'}, {id:'sermon',label:'信息大綱'},
+    {id:'songs',label:'敬拜詩歌'}, {id:'schedule',label:'聚會流程'}, {id:'groups',label:'小組資訊'},
+    {id:'announcements',label:'教會公告'}, {id:'contact',label:'聯絡奉獻'}
+  ];
+
+  const renderSection = () => {
+    switch(activeSection) {
+      case 'basic': return (
+        <Card>
+          <SectionTitle>基本資訊</SectionTitle>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', alignItems:'end'}}>
+            <Field label="週報日期"><input type="date" value={data.bulletinDate} onChange={e=>update('bulletinDate', e.target.value)}/></Field>
+            <div style={{display:'flex', gap:'8px', marginBottom:'14px'}}>
+              <div style={{flex:1}}><label>第幾週</label><input value={data.weekNumber} onChange={e=>update('weekNumber', e.target.value)}/></div>
+              <Btn onClick={calculateWeekNumber} style={{height:'42px'}}>自動換算</Btn>
+            </div>
+          </div>
+          <Field label="年度異象"><input value={data.vision} onChange={e=>update('vision', e.target.value)}/></Field>
+        </Card>
+      );
+
+      case 'sermon': return (
+        <div>
+          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+            <span style={{color:'#666', fontSize:'12px'}}>段落 1.2.3 可排序</span>
+            <Btn size="sm" variant="primary" onClick={()=>{
+              const n = [...data.sermonOutline, {title:'', content:[]}];
+              update('sermonOutline', n);
+            }}>+ 新增段落</Btn>
+          </div>
+          {data.sermonOutline.map((item, idx)=>(
+            <Card key={idx}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+                <div style={{display:'flex', alignItems:'center'}}>
+                  <span style={{color:'#4ade80', fontWeight:'bold', marginRight:'10px'}}>段落 {idx+1}</span>
+                  <SortControls isFirst={idx===0} isLast={idx===data.sermonOutline.length-1} onMoveUp={()=>moveItem('sermonOutline', idx, idx-1)} onMoveDown={()=>moveItem('sermonOutline', idx, idx+1)} />
+                </div>
+                <Btn size="sm" variant="danger" onClick={()=>{
+                  const n = data.sermonOutline.filter((_,i)=>i!==idx);
+                  update('sermonOutline', n);
+                }}>刪除</Btn>
+              </div>
+              <Field label="段落標題"><input value={item.title} onChange={e=>{
+                const n = [...data.sermonOutline]; n[idx].title = e.target.value; update('sermonOutline', n);
+              }}/></Field>
+              <label>內容要點排序</label>
+              {item.content.map((c, ci)=>(
+                <div key={ci} style={{display:'flex', gap:'8px', marginBottom:'6px', alignItems:'center'}}>
+                  <div style={{fontSize:'12px', color:'#4ade80', width:'20px'}}>{ci+1}.</div>
+                  <textarea value={c} style={{flex:1}} onChange={e=>{
+                    const n = [...data.sermonOutline]; n[idx].content[ci] = e.target.value; update('sermonOutline', n);
+                  }}/>
+                  <SortControls isFirst={ci===0} isLast={ci===item.content.length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
+                  <Btn size="sm" variant="danger" onClick={()=>{
+                    const n = [...data.sermonOutline]; n[idx].content.splice(ci,1); update('sermonOutline', n);
+                  }}>✕</Btn>
+                </div>
+              ))}
+              <Btn size="sm" onClick={()=>{
+                const n = [...data.sermonOutline]; n[idx].content.push(''); update('sermonOutline', n);
+              }}>+ 新增要點</Btn>
+            </Card>
+          ))}
+        </div>
+      );
+
+      case 'songs': return (
+        <Card>
+          <SectionTitle>敬拜詩歌 (順序 1.2. 排列)</SectionTitle>
+          {['worship', 'response'].map(type => (
+            <div key={type} style={{marginBottom:'20px'}}>
+              <label>{type === 'worship' ? '1. 敬拜歌曲' : '2. 回應詩歌'}</label>
+              {data.songs[type].map((s, i)=>(
+                <div key={i} className="list-item-row">
+                  <span style={{color:'#4ade80', marginRight:'10px', fontWeight:'bold'}}>{i+1}.</span>
+                  <input value={s} style={{flex:1}} onChange={e=>{
+                    const n = [...data.songs[type]]; n[i] = e.target.value; update(`songs.${type}`, n);
+                  }}/>
+                  <SortControls isFirst={i===0} isLast={i===data.songs[type].length-1} onMoveUp={()=>moveItem(`songs.${type}`, i, i-1)} onMoveDown={()=>moveItem(`songs.${type}`, i, i+1)} />
+                  <Btn size="sm" variant="danger" style={{marginLeft:'8px'}} onClick={()=>{
+                    const n = data.songs[type].filter((_,idx)=>idx!==i); update(`songs.${type}`, n);
+                  }}>✕</Btn>
+                </div>
+              ))}
+              <Btn size="sm" variant="primary" onClick={()=>{
+                const n = [...data.songs[type], '']; update(`songs.${type}`, n);
+              }}>+ 新增詩歌</Btn>
+            </div>
+          ))}
+        </Card>
+      );
+
+      case 'schedule': return (
+        <Card>
+          <SectionTitle>聚會流程排序</SectionTitle>
+          {data.schedule.map((item, idx)=>(
+            <div key={idx} className="list-item-row" style={{display:'grid', gridTemplateColumns:'30px 100px 100px 1fr auto', gap:'8px'}}>
+              <div style={{color:'#4ade80', fontWeight:'bold'}}>{idx+1}</div>
+              <input type="time" value={item.start} onChange={e=>{
+                const n = [...data.schedule]; n[idx].start = e.target.value; update('schedule', n);
+              }}/>
+              <input type="time" value={item.end} onChange={e=>{
+                const n = [...data.schedule]; n[idx].end = e.target.value; update('schedule', n);
+              }}/>
+              <input value={item.task} onChange={e=>{
+                const n = [...data.schedule]; n[idx].task = e.target.value; update('schedule', n);
+              }}/>
+              <div style={{display:'flex', alignItems:'center'}}>
+                <SortControls isFirst={idx===0} isLast={idx===data.schedule.length-1} onMoveUp={()=>moveItem('schedule', idx, idx-1)} onMoveDown={()=>moveItem('schedule', idx, idx+1)} />
+                <Btn size="sm" variant="danger" style={{marginLeft:'8px'}} onClick={()=>{
+                   const n = data.schedule.filter((_,i)=>i!==idx); update('schedule', n);
+                }}>✕</Btn>
+              </div>
+            </div>
+          ))}
+          <Btn size="sm" variant="primary" onClick={()=>{
+            const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
+          }}>+ 新增流程</Btn>
+        </Card>
+      );
+
+      case 'groups': return (
+        <div>
+          <div style={{background:'#0a0a0a', padding:'4px', borderRadius:'8px', display:'flex', gap:'4px', marginBottom:'16px', border:'1px solid #222'}}>
+            {['weekday','sunday','special','overseas'].map(t => (
+              <button key={t} onClick={()=>setGroupTab(t)} style={{
+                flex:1, padding:'8px', border:'none', borderRadius:'6px', cursor:'pointer',
+                background: groupTab===t ? '#1e1e1e' : 'transparent',
+                color: groupTab===t ? '#4ade80' : '#666', fontSize:'13px'
+              }}>{t==='weekday'?'平日':t==='sunday'?'主日':t==='special'?'特色':'海外'}</button>
+            ))}
+          </div>
+          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'10px'}}>
+            <Btn size="sm" variant="primary" onClick={()=>{
+              const path = groupTab==='overseas' ? 'overseas' : `groups.${groupTab}`;
+              const list = groupTab==='overseas' ? data.overseas : data.groups[groupTab];
+              const newItem = groupTab==='overseas' ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} : {name:'', time:'', leader:'', loc:''};
+              update(path, [...list, newItem]);
+            }}>+ 新增</Btn>
+          </div>
+          {(groupTab==='overseas' ? data.overseas : data.groups[groupTab]).map((g, idx)=>(
+            <Card key={idx}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+                <div style={{display:'flex', alignItems:'center'}}>
+                  <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}># {idx+1} 排序</span>
+                  <SortControls 
+                    isFirst={idx===0} 
+                    isLast={idx===(groupTab==='overseas' ? data.overseas : data.groups[groupTab]).length-1} 
+                    onMoveUp={()=>moveItem(groupTab==='overseas'?'overseas':`groups.${groupTab}`, idx, idx-1)} 
+                    onMoveDown={()=>moveItem(groupTab==='overseas'?'overseas':`groups.${groupTab}`, idx, idx+1)} 
+                  />
+                </div>
+                <Btn size="sm" variant="danger" onClick={()=>{
+                  const path = groupTab==='overseas' ? 'overseas' : `groups.${groupTab}`;
+                  const list = (groupTab==='overseas' ? data.overseas : data.groups[groupTab]).filter((_,i)=>i!==idx);
+                  update(path, list);
+                }}>刪除</Btn>
+              </div>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                <Field label="小組名稱"><input value={g.name} onChange={e=>{
+                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
+                   const n = JSON.parse(JSON.stringify(data));
+                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   list[idx].name = e.target.value; setData(n);
+                }}/></Field>
+                <Field label="帶領人 / 牧師"><input value={g.leader} onChange={e=>{
+                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
+                   const n = JSON.parse(JSON.stringify(data));
+                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   list[idx].leader = e.target.value; setData(n);
+                }}/></Field>
+                <Field label="時間"><input value={g.time} onChange={e=>{
+                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
+                   const n = JSON.parse(JSON.stringify(data));
+                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   list[idx].time = e.target.value; setData(n);
+                }}/></Field>
+                <Field label="地點"><input value={g.loc} onChange={e=>{
+                   const path = groupTab==='overseas'?'overseas':`groups.${groupTab}`;
+                   const n = JSON.parse(JSON.stringify(data));
+                   const list = path.split('.').reduce((o,i)=>o[i], n);
+                   list[idx].loc = e.target.value; setData(n);
+                }}/></Field>
+              </div>
+            </Card>
+          ))}
+        </div>
+      );
+
+      case 'announcements': return (
+        <div>
+          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'10px'}}>
+            <Btn size="sm" variant="primary" onClick={()=>{
+              const n = [...data.announcements, {id: Date.now(), title:'', date:'', detail:''}];
+              update('announcements', n);
+            }}>+ 新增公告</Btn>
+          </div>
+          {data.announcements.map((a, idx)=>(
+            <Card key={a.id}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+                <div style={{display:'flex', alignItems:'center'}}>
+                  <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}>公告順序 # {idx+1}</span>
+                  <SortControls isFirst={idx===0} isLast={idx===data.announcements.length-1} onMoveUp={()=>moveItem('announcements', idx, idx-1)} onMoveDown={()=>moveItem('announcements', idx, idx+1)} />
+                </div>
+                <Btn size="sm" variant="danger" onClick={()=>{
+                  const n = data.announcements.filter((_,i)=>i!==idx);
+                  update('announcements', n);
+                }}>刪除</Btn>
+              </div>
+              <div style={{display:'grid', gridTemplateColumns:'120px 1fr', gap:'12px'}}>
+                <Field label="日期標籤"><input value={a.date} onChange={e=>{
+                  const n = [...data.announcements]; n[idx].date = e.target.value; update('announcements', n);
+                }}/></Field>
+                <Field label="標題"><input value={a.title} onChange={e=>{
+                  const n = [...data.announcements]; n[idx].title = e.target.value; update('announcements', n);
+                }}/></Field>
+              </div>
+              <Field label="詳細內容"><textarea value={a.detail} onChange={e=>{
+                 const n = [...data.announcements]; n[idx].detail = e.target.value; update('announcements', n);
+              }}/></Field>
+            </Card>
+          ))}
+        </div>
+      );
+
+      case 'theme': return (
+        <Card>
+          <SectionTitle>信息主題</SectionTitle>
+          <Field label="標題"><input value={data.theme.title} onChange={e=>update('theme.title', e.target.value)}/></Field>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            <Field label="講員"><input value={data.theme.speaker} onChange={e=>update('theme.speaker', e.target.value)}/></Field>
+            <Field label="司會"><input value={data.theme.moderator} onChange={e=>update('theme.moderator', e.target.value)}/></Field>
+          </div>
+          <Field label="本週經文"><textarea value={data.theme.scripture} onChange={e=>update('theme.scripture', e.target.value)}/></Field>
+        </Card>
+      );
+
+      case 'contact': return (
+        <div>
+          <Card><SectionTitle>奉獻資訊</SectionTitle>
+            <Field label="戶名"><input value={data.offering.name} onChange={e=>update('offering.name', e.target.value)}/></Field>
+            <Field label="銀行"><input value={data.offering.bank} onChange={e=>update('offering.bank', e.target.value)}/></Field>
+            <Field label="帳號"><input value={data.offering.account} onChange={e=>update('offering.account', e.target.value)}/></Field>
+          </Card>
+          <Card><SectionTitle>辦公室</SectionTitle>
+            <Field label="電話"><input value={data.office.phone} onChange={e=>update('office.phone', e.target.value)}/></Field>
+            <Field label="地址"><input value={data.office.address} onChange={e=>update('office.address', e.target.value)}/></Field>
+          </Card>
+        </div>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
+      <div style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
+        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+          <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
+          <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.1</div>
+        </div>
+        <Btn variant="primary" onClick={save}>儲存所有變更</Btn>
+      </div>
+
+      <div style={{display:'flex', flex:1}}>
+        <div style={{width:'180px', background:'#0d0d0d', borderRight:'1px solid #1a1a1a', padding:'16px 12px'}}>
+          {navItems.map(item=>(
+            <button key={item.id} onClick={()=>setActiveSection(item.id)} style={{
+              width:'100%', textAlign:'left', padding:'10px 12px', borderRadius:'7px', border:'none',
+              background: activeSection===item.id ? '#1e1e1e' : 'transparent',
+              color: activeSection===item.id ? '#4ade80' : '#888',
+              fontSize:'13px', cursor:'pointer', marginBottom:'4px', display:'block'
+            }}>{item.label}</button>
+          ))}
+          <div style={{marginTop:'30px', padding:'10px', borderTop:'1px solid #222'}}>
+             <Btn size="sm" style={{width:'100%'}} onClick={()=>navigator.clipboard.writeText(JSON.stringify(data)).then(()=>showToast('JSON 已複製'))}>複製全域資料</Btn>
+          </div>
+        </div>
+        <div style={{flex:1, padding:'30px', overflowY:'auto', background:'#0f0f0f'}}>
+          <div style={{maxWidth:'800px', margin:'0 auto'}}>{renderSection()}</div>
+        </div>
+      </div>
+      {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000}}>{toast}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
