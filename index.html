@@ -37,53 +37,45 @@
   
   .list-item-row { display: flex; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #222; }
 
-  /* ================= A4 預覽與列印樣式 ================= */
+  /* ================= A4 預覽與列印樣式 (嚴格對齊 PDF) ================= */
   .a4-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
   }
   .a4-page {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm; /* 嚴格限制高度 */
+    overflow: hidden;
     background: white;
     color: #000;
-    padding: 15mm 12mm;
+    padding: 12mm 15mm;
     box-sizing: border-box;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     font-family: 'Noto Sans TC', sans-serif;
     position: relative;
-    line-height: 1.5;
+    line-height: 1.4;
   }
   
-  /* 針對列印時的特殊設定 */
   @media print {
     @page { size: A4 portrait; margin: 0; }
     body, html { background: white; margin: 0; padding: 0; }
-    
-    /* 隱藏不需要列印的後台 UI */
     .no-print { display: none !important; }
-    
-    /* 移除捲動與背景設定，確保能完整印出多頁 */
     #root > div { display: block !important; }
     #root > div > div:last-child { display: block !important; padding: 0 !important; overflow: visible !important; }
-    
     .a4-container { gap: 0; display: block; }
-    .a4-page { 
-      box-shadow: none; 
-      page-break-after: always; /* 確保每一張 A4 獨立一頁 */
-      page-break-inside: avoid;
-    }
+    .a4-page { box-shadow: none; page-break-after: always; page-break-inside: avoid; border: none; }
   }
 
-  /* 以下為簡易的週報內容排版樣式 (可依需求自行微調) */
-  .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid #003366; padding-bottom: 10px; margin-bottom: 15px; }
-  .pdf-title { color: #003366; font-size: 24px; font-weight: bold; }
-  .pdf-section-title { background: #003366; color: white; padding: 4px 8px; font-weight: bold; font-size: 14px; margin: 15px 0 10px 0; display: inline-block;}
-  .pdf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .pdf-table th, .pdf-table td { border: 1px solid #666; padding: 6px; text-align: left; }
-  .pdf-list { font-size: 13px; margin-left: 20px; padding-left: 0; }
+  /* 排版細節微調 */
+  .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid #003366; padding-bottom: 6px; margin-bottom: 10px; }
+  .pdf-title { color: #003366; font-size: 22px; font-weight: bold; }
+  .pdf-section-title { background: #003366; color: white; padding: 2px 8px; font-weight: bold; font-size: 13px; margin: 12px 0 6px 0; display: inline-block;}
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; }
+  .pdf-table th, .pdf-table td { border: 1px solid #666; padding: 3px 5px; text-align: left; }
+  .pdf-table th { background: #f0f0f0; color: #003366; }
+  .pdf-list { font-size: 11px; margin-left: 20px; padding-left: 0; margin-bottom: 0;}
 </style>
 </head>
 <body>
@@ -91,7 +83,7 @@
 <script type="text/babel">
 const {useState, useEffect, useCallback} = React;
 
-// 2. 填入你的 Firebase 配置
+// 填入你的 Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyCotyhW5mvvDE9YYSz2sICwMtrFlia1Tyg",
   authDomain: "royal-chosen-race.firebaseapp.com",
@@ -178,9 +170,9 @@ const DEFAULT_DATA = {
         ],
         "special": [
             { "name": "風大小組(大專)", "time": "週日 12:00-13:30", "leader": "陳怡伶", "loc": "請洽小組長" },
-            { "name": "風潔小組 (兒少)", "time": "週日 12:00-13:30", "leader": "李宜潔", "loc": "請洽小組長" },
-            { "name": "兒童主日學", "time": "週日 10:00-11:00", "leader": "何宜瑾 牧師", "loc": "請洽小組長" },
-            { "name": "銀寶團契", "time": "雙週三 14:00-15:30", "leader": "張麗明 姐妹", "loc": "請洽小組長" }
+            { "name": "風潔小組(兒少)", "time": "週日 12:00-13:30", "leader": "李宜潔", "loc": "請洽小組長" },
+            { "name": "兒童主日學", "time": "週日 10:00-11:00", "leader": "何宜瑾 牧師", "loc": "馬可樓" },
+            { "name": "銀寶團契", "time": "雙週三 14:00-15:30", "leader": "張麗明 姐妹", "loc": "馬可樓" }
         ]
     },
     "overseas": [
@@ -190,9 +182,9 @@ const DEFAULT_DATA = {
     "announcements": [
         { "id": 1, "title": "葉牧師的勉勵", "date": "即日起", "detail": "請弟兄姊妹預備心領受啟示錄信息，迎接神要給我們的啟示，完成神的旨意。" },
         { "id": 2, "title": "季同工會通知 (登記截止)", "date": "5/1 (五) 前", "detail": "時間： 5/7（四）晚上7:00\n地點： 馬可樓\n請各位牧者撥空出席；歡迎小組長列席參加，備有晚餐，請於5/1前向怡伶傳道登記。" },
-        { "id": 3, "title": "母親節主日聚會", "date": "5/10 (日)", "detail": "時間： 5/10（日）早上9:30-11:00\n地點： 台北科技大學·宏裕科技大樓·B2國際會議廳（捷運忠孝新生站4號出口）\n敬邀我們所愛的母親們參加母親節主日聚會，我們已預備精美禮物、詩歌與信息，希望媽媽們在這一天，領受滿滿的祝福！" },
-        { "id": 4, "title": "風一族職場教會第二屆桌球賽 (報名截止)", "date": "5/10 (日) 前", "detail": "比賽日期： 預賽-5/24 PM12:30、決賽-5/31 PM12:30\n比賽地點： 馬可樓\n參賽對象： 歡迎弟兄姊妹及親友，以及曾來過教會的新朋友一同參與\n報名方式： 請於5/10前，向各小組長報名參加。" },
-        { "id": 5, "title": "聖經培訓課程·啟示錄 (報名截止)", "date": "5/19 (二) 前", "detail": "地點： 馬可樓\n時間： 週六下午2:00-4:00，共12堂\n報名： 請於5/19前，向各小組長報名參加。\n說明： 平安！在末世動盪的世界中，神的話安定在天；2026下半年，葉志偉主任牧師將帶領我們查讀《啟示錄》，邀請您一同來領受～「看哪，我必快來！凡遵守這書上預言的有福了！」" }
+        { "id": 3, "title": "母親節主日聚會", "date": "5/10 (日)", "detail": "時間： 5/10（日）早上9:30-11:00\n地點： 台北科技大學·宏裕科技大樓·B2國際會議廳\n敬邀我們所愛的母親們參加母親節主日聚會，我們已預備精美禮物、詩歌與信息，希望媽媽們在這一天，領受滿滿的祝福！" },
+        { "id": 4, "title": "第二屆桌球賽", "date": "5/10前", "detail": "預賽-5/24 PM12:30；決賽-5/31 PM12:30\n地點： 馬可樓\n歡迎弟兄姊妹及親友，請向各小組長報名參加。" },
+        { "id": 5, "title": "培訓課程·啟示錄", "date": "5/19前", "detail": "地點： 馬可樓\n時間： 週六下午2:00-4:00，共12堂\n請於5/19前，向各小組長報名參加。" }
     ],
     "offering": {
         "name": "社團法人中華基督教風一族職場福音協會",
@@ -206,7 +198,6 @@ const DEFAULT_DATA = {
     }
 };
 
-// 通用按鈕
 const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false}) => {
   const base = "inline-flex items-center gap-2 rounded-lg font-medium transition-all duration-150 border";
   const variants = {
@@ -219,7 +210,6 @@ const Btn = ({onClick, children, variant='default', size='md', className='', dis
   return <button onClick={onClick} disabled={disabled} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
 };
 
-// 排序按鈕組件
 const SortControls = ({onMoveUp, onMoveDown, isFirst, isLast}) => (
   <div className="sort-controls">
     <button className="sort-btn" onClick={onMoveUp} disabled={isFirst} title="上移">▲</button>
@@ -231,132 +221,162 @@ const Card = ({children}) => <div style={{background:'#161616',border:'1px solid
 const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700',color:'#4ade80',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'16px'}}>{children}</h3>;
 const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
 
-// 預覽與列印版面元件
+// ===== 預覽與列印版面元件 (重構以符合 PDF 版面) =====
 const BulletinPreview = ({ data }) => {
   return (
     <div className="a4-container">
-      {/* ===== 第一頁 (正面) ===== */}
+      
+      {/* ──────────────── 第一頁 (正面) ──────────────── */}
       <div className="a4-page">
         <div className="pdf-header">
           <div>
             <div className="pdf-title">風一族職場教會</div>
-            <div style={{ fontSize: '12px', color: '#555' }}>年度異象：{data.vision}</div>
+            <div style={{ fontSize: '11px', color: '#555', fontWeight: 'bold' }}>年度異象：{data.vision}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 'bold' }}>{data.bulletinDate}</div>
-            <div style={{ fontSize: '14px' }}>{data.weekNumber}</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{data.bulletinDate}</div>
+            <div style={{ fontSize: '12px' }}>{data.weekNumber}</div>
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: '0 0 10px 0', color: '#003366' }}>主題：{data.theme.title}</h2>
-          <div style={{ fontSize: '14px' }}>講員：{data.theme.speaker} | 司會：{data.theme.moderator}</div>
-          <div style={{ fontSize: '12px', marginTop: '5px' }}>經文：{data.theme.scripture}</div>
+        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+          <h2 style={{ margin: '0 0 8px 0', color: '#003366', fontSize: '18px' }}>主題：{data.theme.title}</h2>
+          <div style={{ fontSize: '12px' }}>講員：{data.theme.speaker} | 司會：{data.theme.moderator}</div>
+          <div style={{ fontSize: '11px', marginTop: '4px', padding: '0 10px' }}>經文：{data.theme.scripture}</div>
         </div>
 
         <div className="pdf-section-title">信息大綱</div>
         {data.sermonOutline.map((item, idx) => (
-          <div key={idx} style={{ marginBottom: '15px' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#003366' }}>{item.title}</div>
+          <div key={idx} style={{ marginBottom: '10px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#003366' }}>{item.title}</div>
             {item.content.map((c, ci) => (
-              <div key={ci} style={{ fontSize: '13px', marginLeft: '15px', whiteSpace: 'pre-line', marginTop: '4px' }}>
+              <div key={ci} style={{ fontSize: '11px', marginLeft: '15px', whiteSpace: 'pre-line', marginTop: '2px' }}>
                 {c}
               </div>
             ))}
           </div>
         ))}
 
-        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-          <div style={{ flex: 1 }}>
+        {/* 聚會流程與敬拜詩歌 (雙欄) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '15px', marginTop: '10px' }}>
+          <div>
             <div className="pdf-section-title">聚會流程</div>
             <table className="pdf-table">
               <tbody>
                 {data.schedule.map((item, idx) => (
                   <tr key={idx}>
-                    <td width="100">{item.start}-{item.end}</td>
+                    <td width="80" style={{ fontWeight:'bold' }}>{item.start}-{item.end}</td>
                     <td>{item.task}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <div className="pdf-section-title">敬拜詩歌</div>
-            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>1. 敬拜讚美</div>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#003366' }}>1. 敬拜讚美</div>
             <ol className="pdf-list">
               {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
             </ol>
-            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>2. 回應詩歌</div>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#003366', marginTop: '6px' }}>2. 回應詩歌</div>
             <ol className="pdf-list">
               {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
             </ol>
           </div>
         </div>
+
+        {/* 教會消息 (移回第一頁並用緊湊的 Grid 排版) */}
+        <div className="pdf-section-title" style={{ marginTop: '10px' }}>教會消息</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px' }}>
+          {data.announcements.map((a, idx) => (
+            <div key={idx} style={{ fontSize: '10px', lineHeight: '1.3' }}>
+              <div style={{ fontWeight: 'bold', color: '#003366' }}>{idx + 1}. {a.title} ({a.date})</div>
+              <div style={{ whiteSpace: 'pre-line', marginLeft: '12px', marginTop: '2px', color: '#333' }}>{a.detail}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ===== 第二頁 (背面) ===== */}
+      {/* ──────────────── 第二頁 (背面) ──────────────── */}
       <div className="a4-page">
-        <div className="pdf-section-title">教會消息</div>
-        {data.announcements.map((a, idx) => (
-          <div key={idx} style={{ marginBottom: '12px', fontSize: '13px' }}>
-            <span style={{ fontWeight: 'bold' }}>{idx + 1}. {a.title} ({a.date})</span>
-            <div style={{ whiteSpace: 'pre-line', marginLeft: '15px', marginTop: '2px' }}>{a.detail}</div>
+        <div className="pdf-section-title">教會小組</div>
+        
+        {/* 小組區塊雙欄佈局 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* 左欄：週間小組 */}
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#003366', marginBottom: '4px', borderBottom: '1px solid #ccc' }}>週間小組</div>
+            <table className="pdf-table">
+              <thead><tr><th>名稱</th><th>時間</th><th>組長</th><th>地點</th></tr></thead>
+              <tbody>
+                {data.groups.weekday.map((g, i) => (
+                  <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
+          
+          {/* 右欄：主日小組與特色團契 */}
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#003366', marginBottom: '4px', borderBottom: '1px solid #ccc' }}>主日小組</div>
+            <table className="pdf-table">
+              <thead><tr><th>名稱</th><th>時間</th><th>組長</th><th>地點</th></tr></thead>
+              <tbody>
+                {data.groups.sunday.map((g, i) => (
+                  <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+                ))}
+              </tbody>
+            </table>
 
-        <div className="pdf-section-title">教會小組 / 特色團契</div>
-        <table className="pdf-table">
-          <thead>
-            <tr style={{ background: '#f0f0f0' }}>
-              <th>小組名稱</th><th>聚會時間</th><th>帶領人</th><th>地點</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.groups.weekday.map((g, i) => (
-              <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
-            ))}
-            {data.groups.sunday.map((g, i) => (
-              <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
-            ))}
-            {data.groups.special.map((g, i) => (
-              <tr key={'sp'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
-            ))}
-          </tbody>
-        </table>
+            <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#003366', marginTop: '15px', marginBottom: '4px', borderBottom: '1px solid #ccc' }}>特色團契 / 課程 / 青年</div>
+            <table className="pdf-table">
+              <thead><tr><th>名稱</th><th>時間</th><th>負責人</th><th>地點</th></tr></thead>
+              <tbody>
+                {data.groups.special.map((g, i) => (
+                  <tr key={'sp'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-          <div style={{ flex: 1 }}>
+        {/* 底部：海外、奉獻與聯絡資訊 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '15px' }}>
+          <div>
             <div className="pdf-section-title">海外分會</div>
             {data.overseas.map((o, i) => (
-               <div key={i} style={{ fontSize: '13px', marginBottom: '8px' }}>
-                 <div style={{ fontWeight: 'bold' }}>{o.flag} {o.name}</div>
-                 <div>牧師：{o.leader} | 時間：{o.time}</div>
+               <div key={i} style={{ fontSize: '11px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px dashed #eee' }}>
+                 <div style={{ fontWeight: 'bold', color: '#003366' }}>{o.flag} {o.name}</div>
+                 <div style={{ marginTop: '2px' }}>牧師：{o.leader} | 時間：{o.time}</div>
                  <div>地點：{o.loc}</div>
                </div>
             ))}
           </div>
-          <div style={{ flex: 1 }}>
+          
+          <div>
             <div className="pdf-section-title">奉獻與聯絡資訊</div>
-            <div style={{ fontSize: '13px', marginBottom: '10px', padding: '10px', border: '1px solid #ccc', background: '#f9f9f9' }}>
-              <div style={{ fontWeight: 'bold' }}>奉獻帳戶資訊</div>
+            <div style={{ fontSize: '11px', marginBottom: '10px', padding: '8px', border: '1px solid #ccc', background: '#f9f9f9', borderRadius: '4px' }}>
+              <div style={{ fontWeight: 'bold', color: '#003366', marginBottom: '4px' }}>奉獻帳戶資訊</div>
               戶名：{data.offering.name}<br/>
               銀行：{data.offering.bank}<br/>
-              帳號：{data.offering.account}
+              帳號：<span style={{ fontWeight: 'bold' }}>{data.offering.account}</span>
+              <div style={{ fontSize: '9px', color: '#666', marginTop: '4px' }}>*透過銀行轉帳奉獻後，請通知辦公室同工*</div>
             </div>
-            <div style={{ fontSize: '13px' }}>
-              <div style={{ fontWeight: 'bold' }}>聯絡我們 - {data.office.name}</div>
+            <div style={{ fontSize: '11px', padding: '0 4px' }}>
+              <div style={{ fontWeight: 'bold', color: '#003366', marginBottom: '4px' }}>聯絡我們 - {data.office.name}</div>
               電話：{data.office.phone}<br/>
               地址：{data.office.address}
             </div>
           </div>
         </div>
+        
       </div>
     </div>
   );
 };
 
 function App() {
-  const [data, setData] = useState(null); // 改為 null 等待連線
+  const [data, setData] = useState(null); 
   const [activeSection, setActiveSection] = useState('basic');
   const [groupTab, setGroupTab] = useState('weekday');
   const [toast, setToast] = useState(null);
@@ -365,7 +385,6 @@ function App() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
-  // 3. 監聽 Firebase 雲端資料 (與 index.html 通訊關鍵)
   useEffect(() => {
     const bulletinRef = db.ref('bulletin_data');
     bulletinRef.on('value', (snapshot) => {
@@ -381,22 +400,14 @@ function App() {
     return () => bulletinRef.off();
   }, []);
 
-  // 4. 儲存至雲端 Firebase
   const save = async () => {
     setIsSaving(true);
     db.ref('bulletin_data').set(data)
-      .then(() => {
-        showToast('🚀 儲存成功！手機版已即時更新');
-      })
-      .catch((err) => {
-        showToast('❌ 儲存失敗：' + err.message);
-      })
-      .finally(() => {
-        setIsSaving(false);
-      });
+      .then(() => showToast('🚀 儲存成功！手機版已即時更新'))
+      .catch((err) => showToast('❌ 儲存失敗：' + err.message))
+      .finally(() => setIsSaving(false));
   };
 
-  // 更新邏輯
   const update = (path, value) => {
     setData(prev => {
       const next = JSON.parse(JSON.stringify(prev));
@@ -408,7 +419,6 @@ function App() {
     });
   };
 
-  // 自動換算日期
   const calculateWeekNumber = () => {
     const d = new Date(data.bulletinDate);
     if (isNaN(d.getTime())) return showToast('日期格式錯誤');
@@ -419,7 +429,6 @@ function App() {
     showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
   };
 
-  // 通用移動功能
   const moveItem = (path, from, to) => {
     setData(prev => {
       const next = JSON.parse(JSON.stringify(prev));
@@ -563,7 +572,6 @@ function App() {
       );
 
       case 'groups': {
-        // 1. 安全獲取當前列表，加入 || [] 避免 Firebase 刪除空節點導致 undefined 崩潰
         const currentList = groupTab === 'overseas' ? (data.overseas || []) : (data.groups?.[groupTab] || []);
         const currentPath = groupTab === 'overseas' ? 'overseas' : `groups.${groupTab}`;
 
@@ -604,7 +612,6 @@ function App() {
                   }}>刪除</Btn>
                 </div>
                 
-                {/* 2. 簡化 onChange 寫法，不再手動跑迴圈，直接使用展開運算子 */}
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
                   <Field label="小組名稱"><input value={g.name || ''} onChange={e=>{
                      const newList = [...currentList];
@@ -627,7 +634,6 @@ function App() {
                      update(currentPath, newList);
                   }}/></Field>
                   
-                  {/* 3. 如果是海外小組，額外顯示國旗 Emoji 編輯欄位 */}
                   {groupTab === 'overseas' && (
                     <Field label="國旗 (Emoji)"><input value={g.flag || ''} placeholder="例如: 🇬🇧" onChange={e=>{
                        const newList = [...currentList];
