@@ -401,7 +401,7 @@ const BulletinPreview = ({ data }) => {
         {/* 週間與主日小組雙列表格 */}
         <div className="pdf-page-2-grid">
           <table className="pdf-table">
-            <thead><tr><th>週間小組名稱</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+            <thead><tr><th>平日小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
             <tbody>
               {data.groups.weekday.map((g, i) => (
                 <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
@@ -410,7 +410,7 @@ const BulletinPreview = ({ data }) => {
           </table>
           
           <table className="pdf-table">
-            <thead><tr><th>主日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+            <thead><tr><th>週日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
             <tbody>
               {data.groups.sunday.map((g, i) => (
                 <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
