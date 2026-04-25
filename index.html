@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>風一族週報後台管理系統 v2.4 (雲端同步版)</title>
+<title>風一族週報後台管理系統 v2.5 (雲端同步版)</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
@@ -44,7 +44,6 @@
   .a4-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
   .a4-page {
     width: 210mm;
-    /* 將高度稍微從 297mm 縮減至 295mm，確保邊界絕對安全，不會溢出 */
     height: 295mm;
     overflow: hidden; 
     background: white;
@@ -58,7 +57,6 @@
     flex-direction: column;
   }
   
-  /* 解決列印跑版、缺底色、破版的問題 */
   @media print {
     * {
       -webkit-print-color-adjust: exact !important;
@@ -107,12 +105,12 @@
   .pdf-theme-bottom { display: flex; font-size: 13px; color: #555; line-height: 1.4; }
   .pdf-theme-bottom-label { font-weight: bold; color: #333; margin-right: 8px; white-space: nowrap; border-right: 1px solid #ccc; padding-right: 8px; }
 
-  /* 第一頁 嚴格雙欄高度佈局 (確保底部不被撐出) */
+  /* 第一頁 嚴格雙欄高度佈局 */
   .pdf-content-grid { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 12px; 
-    flex: 1 1 0%; /* 強制填滿但不撐開 */
+    flex: 1 1 0%; 
     min-height: 0; 
   }
   .pdf-col { 
@@ -127,15 +125,15 @@
   .pdf-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; overflow: hidden; display: flex; flex-direction: column;}
   .pdf-card-title { color: var(--brand-blue); font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--border-color); padding-bottom: 6px; flex-shrink: 0;}
   
-  /* 上半部：大綱與消息卡片 (自動壓縮並隱藏溢出) */
+  /* 上半部：大綱與消息卡片 */
   .pdf-col > .pdf-card:first-child {
     flex: 1 1 0%;
     min-height: 0;
   }
   
-  /* 下半部：流程與詩歌卡片 (高度絕對鎖死 175px) */
+  /* 下半部：流程與詩歌卡片 (高度放大到 210px 確保不截斷) */
   .pdf-col > .pdf-card:last-child {
-    flex: 0 0 175px; 
+    flex: 0 0 210px; 
   }
 
   /* 統一文字格式 (大綱與消息) */
@@ -356,7 +354,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
         {/* 雙欄主內容區 */}
         <div className="pdf-content-grid">
           
-          {/* 左欄：大綱 (自適應) + 流程 (絕對鎖定高度 175px) */}
+          {/* 左欄：大綱 (自適應) + 流程 (絕對鎖定高度 210px) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
@@ -390,7 +388,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             </div>
           </div>
 
-          {/* 右欄：消息 (自適應) + 詩歌 (絕對鎖定高度 175px) */}
+          {/* 右欄：消息 (自適應) + 詩歌 (絕對鎖定高度 210px) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
@@ -1017,7 +1015,7 @@ function App() {
              </div>
            </div>
            
-           {/* 新增：匯出下載工具列 */}
+           {/* 匯出下載工具列 */}
            <div className="no-print" style={{ background: '#161616', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
              <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 快速下載：</span>
              
@@ -1053,7 +1051,7 @@ function App() {
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.4</div>
+            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.5</div>
             <div style={{fontSize:'11px', color: isConnected ? '#4ade80' : '#888'}}>
                 {isConnected ? '● 已連線雲端' : '○ 載入中...'}
             </div>
