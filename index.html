@@ -225,7 +225,7 @@ const DEFAULT_DATA = {
             { "category": "特色", "name": "兒童主日學", "time": "週日 10:00", "leader": "何宜瑾", "loc": "請洽小組長" },
             { "category": "特色", "name": "銀寶團契", "time": "雙週三 14:00", "leader": "張麗明", "loc": "請洽小組長" },
             { "category": "讀經", "name": "風華小組", "time": "週三 12:00", "leader": "XXX", "loc": "請洽小組長" },
-            { "category": "外縣市", "name": "風隴(嘉義)", "time": "週日 9:30", "leader": "陳秀隴", "loc": "請洽小組長" }
+            { "category": "外縣市", "name": "風隴(嘉義)", "time": "週日 9:30", "leader": "陳秀隴", "loc": "嘉義市西區垂楊路293號" }
         ]
     },
     "overseas": [
@@ -744,6 +744,7 @@ function App() {
                 
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
                   
+                  {/* 特色/讀經/外縣市 分類下拉選單 */}
                   {groupTab === 'special' && (
                     <Field label="所屬分類">
                       <select value={g.category || '特色'} onChange={e=>{
@@ -776,14 +777,9 @@ function App() {
                      update(currentPath, newList);
                   }}/></Field>
                   
+                  {/* 使用 Datalist 結合 Input，達成可選擇可輸入 */}
                   <Field label="地點">
-                    {groupTab === 'overseas' ? (
-                      <input value={g.loc || ''} onChange={e=>{
-                         const newList = [...currentList];
-                         newList[idx] = {...newList[idx], loc: e.target.value};
-                         update(currentPath, newList);
-                      }}/>
-                    ) : (
+                    {groupTab === 'weekday' || groupTab === 'sunday' ? (
                       <select value={g.loc || '請洽小組長'} onChange={e=>{
                          const newList = [...currentList];
                          newList[idx] = {...newList[idx], loc: e.target.value};
@@ -793,6 +789,24 @@ function App() {
                         <option value="北科大">北科大</option>
                         <option value="請洽小組長">請洽小組長</option>
                       </select>
+                    ) : (
+                      <>
+                        <input 
+                          list={`loc-options-${idx}`} 
+                          placeholder="可下拉選擇或自行輸入地址"
+                          value={g.loc || ''} 
+                          onChange={e=>{
+                           const newList = [...currentList];
+                           newList[idx] = {...newList[idx], loc: e.target.value};
+                           update(currentPath, newList);
+                          }}
+                        />
+                        <datalist id={`loc-options-${idx}`}>
+                          <option value="馬可樓" />
+                          <option value="北科大" />
+                          <option value="請洽小組長" />
+                        </datalist>
+                      </>
                     )}
                   </Field>
                   
