@@ -36,7 +36,7 @@
   .word-count { font-size: 11px; float: right; margin-top: -20px; }
   .word-count.warning { color: #ef4444; font-weight: bold; }
 
-  /* ================= A4 預覽與列印樣式 (平衡微縮版) ================= */
+  /* ================= A4 預覽與列印樣式 ================= */
   .a4-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
   .a4-page {
     width: 210mm;
@@ -89,7 +89,7 @@
   .pdf-theme-bottom { display: flex; font-size: 13px; color: #555; line-height: 1.4; }
   .pdf-theme-bottom-label { font-weight: bold; color: #333; margin-right: 8px; white-space: nowrap; border-right: 1px solid #ccc; padding-right: 8px; }
 
-  /* 第一頁 嚴格雙欄高度佈局 */
+  /* 第一頁 嚴格雙欄高度佈局 (智慧延伸) */
   .pdf-content-grid { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
@@ -99,8 +99,8 @@
   }
   .pdf-col { 
     display: grid; 
-    /* 下方卡片高度縮減為 170px，釋放空間給大綱與消息 */
-    grid-template-rows: 1fr 170px; 
+    /* 關鍵修改：讓底部區塊「依照內容自動撐開高度」，上方區塊自動「填滿剩下的彈性空間」 */
+    grid-template-rows: minmax(0, 1fr) auto; 
     gap: 12px; 
     height: 100%; 
   }
@@ -109,7 +109,7 @@
   .pdf-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; overflow: hidden; display: flex; flex-direction: column;}
   .pdf-card-title { color: var(--brand-blue); font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--border-color); padding-bottom: 6px; flex-shrink: 0;}
   
-  /* ================= 統一文字格式 (縮放回 13-14px) ================= */
+  /* ================= 統一文字格式 ================= */
   .content-heading { font-weight: 900; font-size: 14px; color: var(--brand-blue); margin-bottom: 4px; margin-top: 8px;}
   .content-heading:first-child { margin-top: 0; }
   
@@ -137,7 +137,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState, useEffect} = React;
+const {useState, useEffect, useRef} = React;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCotyhW5mvvDE9YYSz2sICwMtrFlia1Tyg",
@@ -270,9 +270,9 @@ const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700
 const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
 
 // ==========================================
-// 預覽與列印版面元件 (平衡微縮版)
+// 預覽與列印版面元件 (含 DOM Ref 以供偵測溢出)
 // ==========================================
-const BulletinPreview = ({ data }) => {
+const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   const parts = data.bulletinDate.split('-');
   const year = parts[0] || '2026';
   const mmdd = parts.length === 3 ? `${parts[1]}/${parts[2]}` : '12/26';
@@ -324,11 +324,12 @@ const BulletinPreview = ({ data }) => {
         {/* 雙欄主內容區 - 強制 Grid 結構 */}
         <div className="pdf-content-grid">
           
-          {/* 左欄：大綱 + 流程 */}
+          {/* 左欄：大綱 (自適應) + 流程 (自動底部對齊) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
-              <div style={{overflow: 'hidden', height: '100%'}}>
+              {/* 綁定 useRef 來偵測是否溢出 */}
+              <div ref={outlineRef} style={{overflow: 'hidden', flexGrow: 1, minHeight: 0}}>
                 {data.sermonOutline.map((item, idx) => (
                   <div key={idx} style={{marginBottom: '8px'}}>
                     <div className="content-heading">{item.title}</div>
@@ -357,11 +358,12 @@ const BulletinPreview = ({ data }) => {
             </div>
           </div>
 
-          {/* 右欄：消息 + 詩歌 */}
+          {/* 右欄：消息 (自適應) + 詩歌 (自動底部對齊) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
-              <div style={{overflow: 'hidden', height: '100%'}}>
+              {/* 綁定 useRef 來偵測是否溢出 */}
+              <div ref={announcementsRef} style={{overflow: 'hidden', flexGrow: 1, minHeight: 0}}>
                 {data.announcements.map((a, idx) => (
                   <div key={idx} style={{ marginBottom: '10px' }}>
                     <div className="content-heading">
@@ -507,8 +509,14 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
+  // 溢出偵測 Ref 與 State
+  const outlineRef = useRef(null);
+  const announcementsRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
+  // Firebase 連線
   useEffect(() => {
     const bulletinRef = db.ref('bulletin_data');
     bulletinRef.on('value', (snapshot) => {
@@ -523,6 +531,24 @@ function App() {
     });
     return () => bulletinRef.off();
   }, []);
+
+  // 偵測 A4 版面是否溢出的核心邏輯
+  useEffect(() => {
+    if (activeSection !== 'preview') return;
+    const checkOverflow = () => {
+      let overflow = false;
+      if (outlineRef.current) {
+        if (outlineRef.current.scrollHeight > Math.ceil(outlineRef.current.clientHeight) + 2) overflow = true;
+      }
+      if (announcementsRef.current) {
+        if (announcementsRef.current.scrollHeight > Math.ceil(announcementsRef.current.clientHeight) + 2) overflow = true;
+      }
+      setIsOverflowing(overflow);
+    };
+    checkOverflow();
+    // 給予 DOM 渲染的時間差再測一次
+    setTimeout(checkOverflow, 200);
+  }, [data, activeSection]);
 
   const save = async () => {
     setIsSaving(true);
@@ -891,11 +917,29 @@ function App() {
       
       case 'preview': return (
         <div>
-           <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-             <span style={{ color: '#aaa', fontSize:'13px' }}>💡 提示：字體已調和為適合閱讀且兼顧容量的大小 (約 13.5px)。超出邊界的內容會自動隱藏。</span>
-             <Btn variant="primary" onClick={() => window.print()}>🖨️ 一鍵列印 PDF</Btn>
+           {/* 動態警告橫幅：偵測文字是否超出版面而被截斷 */}
+           <div className="no-print" style={{ 
+             display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
+             background: isOverflowing ? '#fee2e2' : '#f0fdf4', 
+             padding: '12px 16px', borderRadius: '8px', 
+             border: `1px solid ${isOverflowing ? '#ef4444' : '#4ade80'}` 
+           }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+               {isOverflowing ? (
+                 <span style={{ color: '#b91c1c', fontSize:'14px', fontWeight: 'bold' }}>
+                   🚨 警告：信息大綱或教會消息的文字過多，已超出卡片範圍！印出時將會被裁切，請刪減字數。
+                 </span>
+               ) : (
+                 <span style={{ color: '#166534', fontSize:'14px' }}>
+                   ✅ 版面狀態良好，資訊已完整呈現於 A4 範圍內。
+                 </span>
+               )}
+             </div>
+             <Btn variant={isOverflowing ? 'danger' : 'primary'} onClick={() => window.print()}>🖨️ 一鍵列印 PDF</Btn>
            </div>
-           <BulletinPreview data={data} />
+           
+           {/* 傳遞 useRef 用於 DOM 尺寸計算 */}
+           <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />
         </div>
       );
 
