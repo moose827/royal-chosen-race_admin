@@ -11,6 +11,10 @@
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -41,10 +45,10 @@
   .a4-page {
     width: 210mm;
     height: 297mm;
-    overflow: hidden; /* 強制隱藏溢出內容 */
+    overflow: hidden; 
     background: white;
     color: #333;
-    padding: 8mm 10mm; /* 窄邊界爭取空間 */
+    padding: 8mm 10mm; 
     box-sizing: border-box;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     font-family: 'Noto Sans TC', sans-serif;
@@ -53,14 +57,25 @@
     flex-direction: column;
   }
   
+  /* 解決列印跑版、缺底色、破版的問題 */
   @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     @page { size: A4 portrait; margin: 0; }
     body, html { background: white; margin: 0; padding: 0; }
     .no-print { display: none !important; }
     #root > div { display: block !important; }
     #root > div > div:last-child { display: block !important; padding: 0 !important; overflow: visible !important; }
     .a4-container { gap: 0; display: block; }
-    .a4-page { box-shadow: none; page-break-after: always; page-break-inside: avoid; border: none; }
+    .a4-page { 
+      box-shadow: none; 
+      page-break-after: always; 
+      page-break-inside: avoid; 
+      border: none; 
+      height: 296.5mm; /* 稍微縮減0.5mm避免瀏覽器判定為兩頁 */
+    }
   }
 
   :root {
@@ -70,15 +85,18 @@
   }
 
   /* Header & 主題 */
-  .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--brand-blue); padding-bottom: 10px; margin-bottom: 10px; flex-shrink: 0; }
+  .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--brand-blue); padding-bottom: 12px; margin-bottom: 10px; flex-shrink: 0; }
   .pdf-logo-area { display: flex; align-items: center; gap: 10px; }
-  .pdf-logo-text { color: var(--brand-blue); font-weight: 900; font-size: 24px; letter-spacing: 1px; }
-  .pdf-vision { flex: 1; text-align: center; border-left: 2px solid #eee; border-right: 2px solid #eee; margin: 0 15px; padding: 0 10px; }
-  .pdf-vision-title { font-size: 12px; color: var(--brand-blue); margin-bottom: 2px; }
-  .pdf-vision-text { font-size: 16px; font-weight: 900; color: #333; }
+  .pdf-logo-text { color: var(--brand-blue); font-weight: 900; font-size: 26px; letter-spacing: 1px; }
+  
+  /* 重新設計的年度異象區塊 */
+  .pdf-vision { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 15px; }
+  .pdf-vision-title { font-size: 11px; color: #888; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .pdf-vision-text { font-size: 18px; font-weight: 900; color: var(--brand-blue); letter-spacing: 1px; }
+  
   .pdf-date-box { background: white; color: var(--brand-blue); border-radius: 6px; padding: 4px 12px; text-align: center; border: 2px solid var(--brand-blue); }
-  .pdf-date-week { font-size: 13px; font-weight: bold; background: var(--brand-blue); color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;}
-  .pdf-date-num { font-size: 16px; font-weight: 900; }
+  .pdf-date-week { font-size: 14px; font-weight: bold; background: var(--brand-blue); color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;}
+  .pdf-date-num { font-size: 18px; font-weight: 900; }
 
   .pdf-theme-box { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 15px; margin-bottom: 12px; background: white; flex-shrink: 0; }
   .pdf-theme-top { display: flex; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
@@ -89,30 +107,17 @@
   .pdf-theme-bottom { display: flex; font-size: 13px; color: #555; line-height: 1.4; }
   .pdf-theme-bottom-label { font-weight: bold; color: #333; margin-right: 8px; white-space: nowrap; border-right: 1px solid #ccc; padding-right: 8px; }
 
-  /* 第一頁 嚴格雙欄高度佈局 (智慧延伸) */
-  .pdf-content-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 12px; 
-    flex-grow: 1; 
-    min-height: 0; 
-  }
-  .pdf-col { 
-    display: grid; 
-    /* 關鍵修改：讓底部區塊「依照內容自動撐開高度」，上方區塊自動「填滿剩下的彈性空間」 */
-    grid-template-rows: minmax(0, 1fr) auto; 
-    gap: 12px; 
-    height: 100%; 
-  }
+  /* 第一頁 嚴格雙欄高度佈局 */
+  .pdf-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex-grow: 1; min-height: 0; }
+  .pdf-col { display: grid; grid-template-rows: minmax(0, 1fr) 180px; gap: 12px; height: 100%; } /* 卡死下方卡片高度為 180px */
   
   /* 卡片元件 */
   .pdf-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; overflow: hidden; display: flex; flex-direction: column;}
   .pdf-card-title { color: var(--brand-blue); font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--border-color); padding-bottom: 6px; flex-shrink: 0;}
   
-  /* ================= 統一文字格式 ================= */
+  /* 統一文字格式 (大綱與消息) */
   .content-heading { font-weight: 900; font-size: 14px; color: var(--brand-blue); margin-bottom: 4px; margin-top: 8px;}
   .content-heading:first-child { margin-top: 0; }
-  
   .custom-list { padding-left: 20px; font-size: 13.5px; margin-bottom: 8px; color: #222; line-height: 1.4; }
   .custom-list li { margin-bottom: 3px; }
   .content-text { font-size: 13.5px; margin-left: 16px; margin-bottom: 3px; white-space: pre-line; color: #222; line-height: 1.4; display: list-item; list-style-type: disc;}
@@ -122,7 +127,11 @@
   .pdf-table th { background: var(--brand-blue); color: white; padding: 6px 4px; border: 1px solid white; font-weight: bold; text-align: center;}
   .pdf-table td { background: white; border: 1px solid var(--border-color); padding: 6px 4px; color: #222; }
   .pdf-table tr:nth-child(even) td { background: #fbfbfc; }
+  
+  /* 流程表與詩歌文字統一樣式 */
   .song-category-title { font-size: 13.5px; font-weight: bold; color: var(--brand-blue); margin: 6px 0 4px 0; }
+  .clean-schedule-table { width: 100%; border-collapse: collapse; font-size: 13.5px; color: #222; line-height: 1.4;}
+  .clean-schedule-table td { padding: 4px 0; vertical-align: top; }
 
   /* 第二頁排版 */
   .pdf-page-2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
@@ -285,7 +294,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
     <div className="a4-container">
       
       {/* ──────────────── 第一頁 (正面) ──────────────── */}
-      <div className="a4-page">
+      <div className="a4-page" id="page-1">
         {/* Header 區塊 */}
         <div className="pdf-header">
           <div className="pdf-logo-area">
@@ -297,8 +306,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             </div>
           </div>
           <div className="pdf-vision">
-            <div className="pdf-vision-title">{year} 年度異象</div>
-            <div className="pdf-vision-text">{data.vision.split('，').map((v,i)=><div key={i}>{v}</div>)}</div>
+            <div className="pdf-vision-title">— {year} 年度異象 —</div>
+            <div className="pdf-vision-text">{data.vision}</div>
           </div>
           <div className="pdf-date-box">
             <div className="pdf-date-week">{data.weekNumber}</div>
@@ -321,10 +330,10 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           </div>
         </div>
 
-        {/* 雙欄主內容區 - 強制 Grid 結構 */}
+        {/* 雙欄主內容區 */}
         <div className="pdf-content-grid">
           
-          {/* 左欄：大綱 (自適應) + 流程 (自動底部對齊) */}
+          {/* 左欄：大綱 (自適應) + 流程 (固定 180px) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
@@ -345,12 +354,12 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
 
             <div className="pdf-card">
               <div className="pdf-card-title">📅 聚會流程</div>
-              <table className="pdf-table" style={{ textAlign: 'left', border: 'none' }}>
+              <table className="clean-schedule-table">
                 <tbody>
                   {data.schedule.map((item, idx) => (
-                    <tr key={idx} style={{ background: 'transparent' }}>
-                      <td style={{ border: 'none', fontWeight:'bold', width: '95px', padding: '4px 0' }}>{item.start}-{item.end}</td>
-                      <td style={{ border: 'none', padding: '4px 0' }}>{item.task}</td>
+                    <tr key={idx}>
+                      <td style={{ fontWeight:'bold', width: '90px', paddingLeft: '8px' }}>{item.start}-{item.end}</td>
+                      <td>{item.task}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -358,7 +367,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             </div>
           </div>
 
-          {/* 右欄：消息 (自適應) + 詩歌 (自動底部對齊) */}
+          {/* 右欄：消息 (自適應) + 詩歌 (固定 180px) */}
           <div className="pdf-col">
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
@@ -394,7 +403,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
       </div>
 
       {/* ──────────────── 第二頁 (背面) ──────────────── */}
-      <div className="a4-page" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="a4-page" id="page-2" style={{ display: 'flex', flexDirection: 'column' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
           <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🔠 教會小組</div>
@@ -403,7 +412,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
         {/* 週間與主日小組雙列表格 */}
         <div className="pdf-page-2-grid">
           <table className="pdf-table">
-            <thead><tr><th>平日小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+            <thead><tr><th>週間小組名稱</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
             <tbody>
               {data.groups.weekday.map((g, i) => (
                 <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
@@ -412,7 +421,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           </table>
           
           <table className="pdf-table">
-            <thead><tr><th>週日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+            <thead><tr><th>主日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
             <tbody>
               {data.groups.sunday.map((g, i) => (
                 <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
@@ -508,6 +517,7 @@ function App() {
   const [toast, setToast] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // 溢出偵測 Ref 與 State
   const outlineRef = useRef(null);
@@ -546,7 +556,6 @@ function App() {
       setIsOverflowing(overflow);
     };
     checkOverflow();
-    // 給予 DOM 渲染的時間差再測一次
     setTimeout(checkOverflow, 200);
   }, [data, activeSection]);
 
@@ -589,6 +598,54 @@ function App() {
       list.splice(to, 0, item);
       return next;
     });
+  };
+
+  // ================= 匯出與下載功能 =================
+  const exportToImage = async (pageId, format) => {
+    setIsExporting(true);
+    showToast('影像產出中，請稍候...');
+    try {
+      const el = document.getElementById(pageId);
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+      const link = document.createElement('a');
+      link.download = `風一族週報_${pageId}.${format}`;
+      link.href = canvas.toDataURL(`image/${format}`);
+      link.click();
+    } catch (err) {
+      showToast('匯出圖片失敗：' + err.message);
+    }
+    setIsExporting(false);
+  };
+
+  const exportToPDF = async (mode) => {
+    setIsExporting(true);
+    showToast('PDF 產出中，請稍候...');
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const p1 = document.getElementById('page-1');
+      const p2 = document.getElementById('page-2');
+
+      if (mode === 'page1' || mode === 'all') {
+        const canvas1 = await html2canvas(p1, { scale: 2, useCORS: true });
+        pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+      }
+
+      if (mode === 'all') pdf.addPage();
+
+      if (mode === 'page2' || mode === 'all') {
+        const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
+        if (mode === 'page2') {
+           pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+        } else {
+           pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+        }
+      }
+      pdf.save(mode === 'all' ? '風一族週報_完整版.pdf' : `風一族週報_${mode}.pdf`);
+    } catch (err) {
+      showToast('匯出 PDF 失敗：' + err.message);
+    }
+    setIsExporting(false);
   };
 
   const navItems = [
@@ -917,7 +974,7 @@ function App() {
       
       case 'preview': return (
         <div>
-           {/* 動態警告橫幅：偵測文字是否超出版面而被截斷 */}
+           {/* 動態警告橫幅 */}
            <div className="no-print" style={{ 
              display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
              background: isOverflowing ? '#fee2e2' : '#f0fdf4', 
@@ -930,12 +987,32 @@ function App() {
                    🚨 警告：信息大綱或教會消息的文字過多，已超出卡片範圍！印出時將會被裁切，請刪減字數。
                  </span>
                ) : (
-                 <span style={{ color: '#166534', fontSize:'14px' }}>
+                 <span style={{ color: '#166534', fontSize:'14px', fontWeight: 'bold' }}>
                    ✅ 版面狀態良好，資訊已完整呈現於 A4 範圍內。
                  </span>
                )}
              </div>
-             <Btn variant={isOverflowing ? 'danger' : 'primary'} onClick={() => window.print()}>🖨️ 一鍵列印 PDF</Btn>
+           </div>
+           
+           {/* 新增：匯出下載工具列 */}
+           <div className="no-print" style={{ background: '#161616', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+             <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 快速下載：</span>
+             
+             <Btn size="sm" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
+             <Btn size="sm" onClick={() => exportToImage('page-1', 'jpeg')} disabled={isExporting}>P1 (JPEG)</Btn>
+             <Btn size="sm" onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
+             
+             <span style={{width: '1px', height: '24px', background: '#333', margin: '0 5px'}}></span>
+             
+             <Btn size="sm" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
+             <Btn size="sm" onClick={() => exportToImage('page-2', 'jpeg')} disabled={isExporting}>P2 (JPEG)</Btn>
+             <Btn size="sm" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
+             
+             <span style={{flex: 1}}></span>
+             
+             <Btn variant={isOverflowing ? 'danger' : 'primary'} onClick={() => exportToPDF('all')} disabled={isExporting}>
+               {isExporting ? '產出中...' : '🖨️ 下載完整雙面 PDF'}
+             </Btn>
            </div>
            
            {/* 傳遞 useRef 用於 DOM 尺寸計算 */}
