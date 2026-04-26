@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>風一族週報後台管理系統 v2.5 (雲端同步版)</title>
+<title>風一族週報後台管理系統 v2.2 (雲端同步版)</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
@@ -106,55 +106,35 @@
   .pdf-theme-bottom-label { font-weight: bold; color: #333; margin-right: 8px; white-space: nowrap; border-right: 1px solid #ccc; padding-right: 8px; }
 
   /* 第一頁 嚴格雙欄高度佈局 */
-  .pdf-content-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 12px; 
-    flex: 1 1 0%; 
-    min-height: 0; 
-  }
-  .pdf-col { 
-    display: flex; 
-    flex-direction: column;
-    gap: 12px; 
-    height: 100%; 
-    min-height: 0;
-  } 
+  .pdf-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex-grow: 1; min-height: 0; }
+  .pdf-col { display: grid; gap: 12px; height: 100%; min-height: 0; } 
   
   /* 卡片元件 */
   .pdf-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; overflow: hidden; display: flex; flex-direction: column;}
   .pdf-card-title { color: var(--brand-blue); font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--border-color); padding-bottom: 6px; flex-shrink: 0;}
   
-  /* 上半部：大綱與消息卡片 */
-  .pdf-col > .pdf-card:first-child {
-    flex: 1 1 0%;
-    min-height: 0;
-  }
-  
-  /* 下半部：流程與詩歌卡片 (高度放大到 210px 確保不截斷) */
-  .pdf-col > .pdf-card:last-child {
-    flex: 0 0 210px; 
-  }
-
   /* 統一文字格式 (大綱與消息) */
   .content-heading { font-weight: 900; font-size: 14px; color: var(--brand-blue); margin-bottom: 4px; margin-top: 8px;}
   .content-heading:first-child { margin-top: 0; }
-  .custom-list { padding-left: 20px; font-size: 13.5px; margin-bottom: 8px; color: #222; line-height: 1.4; }
-  .custom-list li { margin-bottom: 3px; }
-  .content-text { font-size: 13.5px; margin-left: 16px; margin-bottom: 3px; white-space: pre-line; color: #222; line-height: 1.4; display: list-item; list-style-type: disc;}
+  
+  /* 大綱自定義標號：支援 pre-wrap 保留空白縮排與換行，移除 list-item 點點 */
+  .outline-text { font-size: 13.5px; margin-left: 4px; margin-bottom: 4px; white-space: pre-wrap; color: #222; line-height: 1.5; display: block; }
+  
+  /* 消息列表格式 */
+  .custom-list { padding-left: 16px; font-size: 13.5px; margin-bottom: 8px; color: #222; line-height: 1.5; }
+  .custom-list li { margin-bottom: 4px; }
+  
+  /* 表格與詩歌元件對齊 (移除左側多餘 padding) */
+  .clean-schedule-table { width: 100%; border-collapse: collapse; font-size: 13.5px; color: #222; line-height: 1.5;}
+  .clean-schedule-table td { padding: 4px 0; vertical-align: top; }
+  .song-category-title { font-size: 13.5px; font-weight: bold; color: var(--brand-blue); margin: 6px 0 4px 0; }
 
-  /* 表格與詩歌元件 */
+  /* 第二頁排版 */
   .pdf-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
   .pdf-table th { background: var(--brand-blue); color: white; padding: 6px 4px; border: 1px solid white; font-weight: bold; text-align: center;}
   .pdf-table td { background: white; border: 1px solid var(--border-color); padding: 6px 4px; color: #222; }
   .pdf-table tr:nth-child(even) td { background: #fbfbfc; }
-  
-  /* 流程表與詩歌文字統一樣式 */
-  .song-category-title { font-size: 13.5px; font-weight: bold; color: var(--brand-blue); margin: 6px 0 4px 0; }
-  .clean-schedule-table { width: 100%; border-collapse: collapse; font-size: 13.5px; color: #222; line-height: 1.4;}
-  .clean-schedule-table td { padding: 4px 0; vertical-align: top; }
 
-  /* 第二頁排版 */
   .pdf-page-2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
   .pdf-page-2-special-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 15px; }
 
@@ -186,6 +166,7 @@ const DEFAULT_DATA = {
     "bulletinDate": "2026-04-26",
     "weekNumber": "第四週",
     "vision": "敬畏神，一無所懼",
+    "layout": { "longOutline": false },
     "theme": {
         "title": "神坐著為王： 一無所懼，一無所缺",
         "speaker": "葉志偉 牧師",
@@ -196,22 +177,21 @@ const DEFAULT_DATA = {
         {
             "title": "一、一群加利利無知的小民",
             "content": [
-                "在耶穌復活升天後，個個充滿智慧和膽量",
-                "無知的小民成為耶和華的軍隊，神蹟奇事隨著他們"
+                "1. 在耶穌復活升天後\n   • 個個充滿智慧和膽量\n   • 勇敢果斷地宣告：除祂以外別無拯救\n   • 直言順從神，不順從人是應當的",
+                "2. 無知的小民成為耶和華的軍隊\n   • 神蹟奇事隨著他們，一個生來是瘸腿的起來行走\n   • 聖靈充滿，放膽講神的道\n   • 提醒聖徒要謹守、儆醒：仇敵如同吼叫的獅子，遍地遊行尋找可吞吃的人"
             ]
         },
         {
-            "title": "二、敵擋神的自義者",
+            "title": "二、一個從前是褻瀆神、逼迫人、侮慢人的自義者",
             "content": [
-                "在大馬色途中遇見主後，捨身忘死的追隨主",
-                "一生為神所用，打過美好的仗、跑盡當跑的路"
+                "1. 在大馬色途中遇見主後\n   • 捨身忘死的追隨主耶穌基督\n   • 認識自己是罪人中的罪魁",
+                "2. 一生為神所用，成為神聰明的工頭\n   • 打過那美好的仗\n   • 跑盡當跑的路\n   • 守住所信的道"
             ]
         },
         {
-            "title": "三、完成主的大使命",
+            "title": "三、加利利無知的小民和敵擋神的自義者",
             "content": [
-                "知道所信的主已經復活升上高天，賜下聖靈",
-                "神坐著為王，我們一無所懼，勇往直前"
+                "1. 知道所信的主已經復活升上高天，賜下聖靈\n2. 神坐著為王，我們一無所懼，一無所缺\n3. 勇往直前，完成主的大使命"
             ]
         }
     ],
@@ -300,13 +280,14 @@ const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700
 const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
 
 // ==========================================
-// 預覽與列印版面元件 (含 DOM Ref 以供偵測溢出)
+// 預覽與列印版面元件
 // ==========================================
 const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   const parts = data.bulletinDate.split('-');
   const year = parts[0] || '2026';
   const mmdd = parts.length === 3 ? `${parts[1]}/${parts[2]}` : '12/26';
 
+  const isLongOutline = data.layout?.longOutline || false;
   const specialGroups = data.groups.special.filter(g => g.category === '特色' || !g.category);
   const readingGroups = data.groups.special.filter(g => g.category === '讀經');
   const outOfTownGroups = data.groups.special.filter(g => g.category === '外縣市');
@@ -316,7 +297,6 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
       
       {/* ──────────────── 第一頁 (正面) ──────────────── */}
       <div className="a4-page" id="page-1">
-        {/* Header 區塊 */}
         <div className="pdf-header">
           <div className="pdf-logo-area">
             <img src="./2022logo (1).png" alt="logo" style={{width:'50px', height:'50px', objectFit:'contain'}} />
@@ -336,7 +316,6 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           </div>
         </div>
 
-        {/* 主題資訊區塊 */}
         <div className="pdf-theme-box">
           <div className="pdf-theme-top">
             <div className="pdf-theme-badge">主題</div>
@@ -351,48 +330,47 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           </div>
         </div>
 
-        {/* 雙欄主內容區 */}
+        {/* 雙欄主內容區 - 根據模式切換高度配比 */}
         <div className="pdf-content-grid">
           
-          {/* 左欄：大綱 (自適應) + 流程 (絕對鎖定高度 210px) */}
-          <div className="pdf-col">
+          {/* 左欄 */}
+          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 210px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
-              {/* 綁定 useRef 來偵測是否溢出，設定 flex: '1 1 0%' 強迫限制高度 */}
               <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
                 {data.sermonOutline.map((item, idx) => (
                   <div key={idx} style={{marginBottom: '8px'}}>
                     <div className="content-heading">{item.title}</div>
-                    <ul style={{margin:0, padding:0}}>
-                      {item.content.map((c, ci) => (
-                        <li key={ci} className="content-text">{c}</li>
-                      ))}
-                    </ul>
+                    {item.content.map((c, ci) => (
+                      <div key={ci} className="outline-text">{c}</div>
+                    ))}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="pdf-card">
-              <div className="pdf-card-title">📅 聚會流程</div>
-              <table className="clean-schedule-table">
-                <tbody>
-                  {data.schedule.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight:'bold', width: '90px', paddingLeft: '8px' }}>{item.start}-{item.end}</td>
-                      <td>{item.task}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* 標準模式下的聚會流程 (底部) */}
+            {!isLongOutline && (
+              <div className="pdf-card">
+                <div className="pdf-card-title">📅 聚會流程</div>
+                <table className="clean-schedule-table">
+                  <tbody>
+                    {data.schedule.map((item, idx) => (
+                      <tr key={idx}>
+                        <td style={{ fontWeight:'bold', width: '90px' }}>{item.start}-{item.end}</td>
+                        <td>{item.task}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
-          {/* 右欄：消息 (自適應) + 詩歌 (絕對鎖定高度 210px) */}
-          <div className="pdf-col">
+          {/* 右欄 */}
+          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 210px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
-              {/* 綁定 useRef 來偵測是否溢出，設定 flex: '1 1 0%' 強迫限制高度 */}
               <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
                 {data.announcements.map((a, idx) => (
                   <div key={idx} style={{ marginBottom: '10px' }}>
@@ -407,17 +385,48 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
               </div>
             </div>
 
-            <div className="pdf-card">
-              <div className="pdf-card-title">🎵 敬拜詩歌</div>
-              <div className="song-category-title">敬拜歌曲</div>
-              <ol className="custom-list">
-                {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
-              </ol>
-              <div className="song-category-title" style={{ marginTop: '8px' }}>回應詩歌</div>
-              <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '8px' }}>
-                {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
+            {/* 根據模式渲染不同的底部卡片 */}
+            {isLongOutline ? (
+              <div className="pdf-card" style={{ flexDirection: 'row', gap: '10px', padding: '12px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingRight: '4px' }}>
+                  <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>📅 聚會流程</div>
+                  <table className="clean-schedule-table" style={{ fontSize: '12.5px' }}>
+                    <tbody>
+                      {data.schedule.map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontWeight:'bold', width: '80px', padding: '2px 0' }}>{item.start}-{item.end}</td>
+                          <td style={{ padding: '2px 0' }}>{item.task}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
+                  <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
+                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: 0 }}>敬拜歌曲</div>
+                  <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
+                    {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+                  </ol>
+                  <div className="song-category-title" style={{ fontSize: '12.5px' }}>回應詩歌</div>
+                  <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px', fontSize: '12.5px' }}>
+                    {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="pdf-card">
+                <div className="pdf-card-title">🎵 敬拜詩歌</div>
+                <div className="song-category-title">敬拜歌曲</div>
+                <ol className="custom-list">
+                  {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+                </ol>
+                <div className="song-category-title" style={{ marginTop: '8px' }}>回應詩歌</div>
+                <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '8px' }}>
+                  {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            )}
           </div>
 
         </div>
@@ -553,6 +562,8 @@ function App() {
     bulletinRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
       if (cloudData) {
+        // 確保 layout 物件存在
+        if (!cloudData.layout) cloudData.layout = { longOutline: false };
         setData(cloudData);
         setIsConnected(true);
       } else {
@@ -702,7 +713,7 @@ function App() {
       case 'sermon': return (
         <div>
           <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-            <span style={{color:'#ef4444', fontSize:'12px', fontWeight:'bold'}}>⚠️ 建議每個要點控制在 80 字以內，以免超出排版被隱藏。</span>
+            <span style={{color:'#4ade80', fontSize:'12px'}}>支援自定義標號，輸入空白可自動縮排。</span>
             <Btn size="sm" variant="primary" onClick={()=>{
               const n = [...data.sermonOutline, {title:'', content:[]}];
               update('sermonOutline', n);
@@ -723,7 +734,7 @@ function App() {
               <Field label="段落標題"><input value={item.title} onChange={e=>{
                 const n = [...data.sermonOutline]; n[idx].title = e.target.value; update('sermonOutline', n);
               }}/></Field>
-              <label>內容要點排序</label>
+              <label>內容要點排序 (可直接輸入 1. 或 •)</label>
               {item.content.map((c, ci)=>(
                 <div key={ci} style={{display:'flex', gap:'8px', marginBottom:'6px', alignItems:'center'}}>
                   <div style={{fontSize:'12px', color:'#4ade80', width:'20px'}}>{ci+1}.</div>
@@ -731,7 +742,6 @@ function App() {
                     <textarea value={c} onChange={e=>{
                       const n = [...data.sermonOutline]; n[idx].content[ci] = e.target.value; update('sermonOutline', n);
                     }}/>
-                    <span className={`word-count ${c.length > 80 ? 'warning' : ''}`}>{c.length} / 80 字</span>
                   </div>
                   <SortControls isFirst={ci===0} isLast={ci===item.content.length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
                   <Btn size="sm" variant="danger" onClick={()=>{
@@ -995,6 +1005,19 @@ function App() {
       
       case 'preview': return (
         <div>
+           {/* 大綱長篇模式切換功能 */}
+           <div className="no-print" style={{ background: '#0a0a0a', border: '1px solid #333', padding: '12px 16px', borderRadius: '8px', marginBottom: '15px' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#4ade80', fontSize: '14px', fontWeight: 'bold' }}>
+                  <input 
+                      type="checkbox" 
+                      checked={data.layout?.longOutline || false} 
+                      onChange={e => update('layout.longOutline', e.target.checked)} 
+                      style={{ width: '18px', height: '18px', margin: 0, cursor: 'pointer' }}
+                  />
+                  啟用「長篇大綱模式」(當大綱字數過多時，可將流程移至右下角與詩歌並排)
+              </label>
+           </div>
+
            {/* 動態警告橫幅 */}
            <div className="no-print" style={{ 
              display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
@@ -1005,7 +1028,7 @@ function App() {
              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                {isOverflowing ? (
                  <span style={{ color: '#b91c1c', fontSize:'14px', fontWeight: 'bold' }}>
-                   🚨 警告：信息大綱或教會消息的文字過多，已超出卡片範圍！印出時將會被裁切，請刪減字數。
+                   🚨 警告：文字過多已超出卡片！請刪減字數，或勾選上方的「長篇大綱模式」。
                  </span>
                ) : (
                  <span style={{ color: '#166534', fontSize:'14px', fontWeight: 'bold' }}>
@@ -1051,7 +1074,7 @@ function App() {
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.5</div>
+            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.2</div>
             <div style={{fontSize:'11px', color: isConnected ? '#4ade80' : '#888'}}>
                 {isConnected ? '● 已連線雲端' : '○ 載入中...'}
             </div>
