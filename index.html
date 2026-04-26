@@ -394,48 +394,50 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                 <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
                   <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
+                  
                   <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
-                  <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
+                  <ol className="custom-list" style={{ listStyleType: data.songs.worship.length > 1 ? 'decimal' : 'none', paddingLeft: data.songs.worship.length > 1 ? '16px' : '4px', fontSize: '12.5px', marginBottom: '6px' }}>
                     {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                   </ol>
+                  
                   <div className="song-category-title" style={{ fontSize: '12.5px' }}>回應詩歌</div>
-                  <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px', fontSize: '12.5px' }}>
+                  <ol className="custom-list" style={{ listStyleType: data.songs.response.length > 1 ? 'decimal' : 'none', paddingLeft: data.songs.response.length > 1 ? '16px' : '4px', fontSize: '12.5px' }}>
                     {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-                  </ul>
+                  </ol>
+
                 </div>
               </div>
             ) : (
               <div className="pdf-card">
                 <div className="pdf-card-title">🎵 敬拜詩歌</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: '1 1 0%' }}>
+                  
                   <div>
-  <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
-  <ol 
-    className="custom-list" 
-    style={{ 
-      listStyleType: data.songs.worship.length > 1 ? 'decimal' : 'none', 
-      paddingLeft: data.songs.worship.length > 1 ? '20px' : '4px' 
-    }}
-  >
-    {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
-  </ol>
-</div>
-
-<div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
-  <div className="song-category-title" style={{ marginTop: '4px' }}>回應詩歌</div>
-  <ol 
-    className="custom-list" 
-    style={{ 
-      listStyleType: data.songs.response.length > 1 ? 'decimal' : 'none', 
-      paddingLeft: data.songs.response.length > 1 ? '20px' : '4px' 
-    }}
-  >
-    {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-  </ol>
-</div>
-
-                    </ul>
+                    <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
+                    <ol 
+                      className="custom-list" 
+                      style={{ 
+                        listStyleType: data.songs.worship.length > 1 ? 'decimal' : 'none', 
+                        paddingLeft: data.songs.worship.length > 1 ? '20px' : '4px' 
+                      }}
+                    >
+                      {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
                   </div>
+
+                  <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
+                    <div className="song-category-title" style={{ marginTop: '4px' }}>回應詩歌</div>
+                    <ol 
+                      className="custom-list" 
+                      style={{ 
+                        listStyleType: data.songs.response.length > 1 ? 'decimal' : 'none', 
+                        paddingLeft: data.songs.response.length > 1 ? '20px' : '4px' 
+                      }}
+                    >
+                      {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
+                  </div>
+
                 </div>
               </div>
             )}
