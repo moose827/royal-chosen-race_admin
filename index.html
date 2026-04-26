@@ -6,6 +6,7 @@
 <title>風一族週報後台管理系統 v3.0 (雲端同步版)</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script> 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-storage-compat.js"></script>
 
@@ -106,7 +107,7 @@
   @media (max-width: 768px) {
     /* Header 變為垂直排列 */
     .admin-header { padding: 12px 16px; flex-direction: column; align-items: stretch; gap: 12px; }
-    .admin-header-right { justify-content: space-between; width: 100%; }
+    .admin-header-right { justify-content: space-between; width: 100%; flex-wrap: wrap; }
     
     /* 主佈局變為垂直排列 */
     .main-layout { flex-direction: column; }
@@ -198,6 +199,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
+const auth = firebase.auth(); // 初始化 Auth
 
 const DEFAULT_DATA = {
     "bulletinDate": "2026-04-26",
@@ -258,13 +260,13 @@ const Btn = ({onClick, children, variant='default', size='md', className='', dis
     ghost: "bg-transparent border-transparent text-[#888] hover:text-[#ccc]"
   };
   const sizes = {sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-base"};
-  return <button onClick={onClick} disabled={disabled} style={style} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
+  return <button type={onClick ? 'button' : 'submit'} onClick={onClick} disabled={disabled} style={style} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
 };
 
 const SortControls = ({onMoveUp, onMoveDown, isFirst, isLast}) => (
   <div className="sort-controls">
-    <button className="sort-btn" onClick={onMoveUp} disabled={isFirst} title="上移">▲</button>
-    <button className="sort-btn" onClick={onMoveDown} disabled={isLast} title="下移">▼</button>
+    <button type="button" className="sort-btn" onClick={onMoveUp} disabled={isFirst} title="上移">▲</button>
+    <button type="button" className="sort-btn" onClick={onMoveDown} disabled={isLast} title="下移">▼</button>
   </div>
 );
 
@@ -493,7 +495,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {data.overseas.map((o, i) => (
               <div key={i} style={{ fontSize: '13px', color: '#222', lineHeight: '1.6' }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px', marginBottom: '4px' }}>{o.flag} {o.name}</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px', marginBottom: '4px' }}>{o.flag} {o.o_name || o.name}</div>
                 <div>牧師：{o.leader}</div>
                 <div>主日聚會：{o.time}</div>
                 <div>聚會地點：{o.loc}</div>
@@ -533,6 +535,12 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // 新增：登入相關的狀態
+  const [user, setUser] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const outlineRef = useRef(null);
   const announcementsRef = useRef(null);
@@ -540,7 +548,24 @@ function App() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
+  // 監聽 Firebase 登入狀態
   useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((u) => {
+      if (u) {
+        setUser(u);
+      } else {
+        setUser(null);
+        setData(null); // 登出後清空前端資料
+      }
+      setIsAuthChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 只有在登入後才連接資料庫讀取資料
+  useEffect(() => {
+    if (!user) return; // 未登入不動作
+    
     const bulletinRef = db.ref('bulletin_data');
     bulletinRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
@@ -554,10 +579,10 @@ function App() {
       }
     });
     return () => bulletinRef.off();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    if (activeSection !== 'preview') return;
+    if (activeSection !== 'preview' || !data) return;
     const checkOverflow = () => {
       let overflow = false;
       if (outlineRef.current && outlineRef.current.scrollHeight > Math.ceil(outlineRef.current.clientHeight) + 2) overflow = true;
@@ -567,6 +592,19 @@ function App() {
     checkOverflow();
     setTimeout(checkOverflow, 300);
   }, [data, activeSection]);
+
+  // 新增：處理登入
+  const handleLogin = (e) => {
+    e.preventDefault();
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => showToast('✅ 登入成功'))
+      .catch(err => showToast('❌ 登入失敗：' + err.message));
+  };
+
+  // 新增：處理登出
+  const handleLogout = () => {
+    auth.signOut().then(() => showToast('✅ 已安全登出'));
+  };
 
   const save = async () => {
     setIsSaving(true);
@@ -1075,7 +1113,6 @@ function App() {
              </Btn>
            </div>
            
-           {/* 傳遞 useRef 用於 DOM 尺寸計算 */}
            <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />
         </div>
       );
@@ -1084,6 +1121,31 @@ function App() {
     }
   };
 
+  // 1. 處理初始化驗證狀態畫面
+  if (isAuthChecking) {
+    return <div style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background:'#0f0f0f', color:'#888'}}>驗證登入狀態中...</div>;
+  }
+
+  // 2. 處理尚未登入的畫面
+  if (!user) {
+    return (
+      <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background:'#0f0f0f' }}>
+        <div style={{ width: '100%', maxWidth: '400px', padding: '20px' }}>
+          <Card>
+            <SectionTitle>風一族週報管理系統</SectionTitle>
+            <form onSubmit={handleLogin}>
+              <Field label="帳號 (Email)"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="輸入教會信箱" /></Field>
+              <Field label="密碼"><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required placeholder="輸入密碼" /></Field>
+              <Btn variant="primary" style={{width:'100%', marginTop: '10px'}}>進入系統</Btn>
+            </form>
+          </Card>
+        </div>
+        {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.5)'}}>{toast}</div>}
+      </div>
+    );
+  }
+
+  // 3. 已登入後顯示的主畫面
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
       <div className="no-print" style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
@@ -1098,6 +1160,8 @@ function App() {
         </div>
         
         <div className="admin-header-right" style={{display:'flex', alignItems:'center', gap:'12px'}}>
+          <span style={{fontSize:'12px', color:'#888', display: window.innerWidth > 768 ? 'block' : 'none'}}>{user.email}</span>
+          <Btn size="sm" variant="ghost" onClick={handleLogout}>登出</Btn>
           <Btn variant="default" onClick={save} disabled={isSaving || !isConnected}>
               {isSaving ? '更新中...' : '💾 更新資訊'}
           </Btn>
