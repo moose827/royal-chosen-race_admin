@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>風一族週報後台管理系統 v2.7 (雲端同步版)</title>
+<title>風一族週報後台管理系統 v2.6 (雲端同步版)</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
@@ -48,7 +48,7 @@
     border-right: 1px solid #1a1a1a; 
     padding: 16px 12px;
     position: sticky;
-    top: 61px; /* 貼齊 Header 底部 */
+    top: 61px;
     height: calc(100vh - 61px);
     overflow-y: auto;
   }
@@ -177,7 +177,7 @@ const DEFAULT_DATA = {
     "weekNumber": "第四週",
     "vision": "敬畏神，一無所懼",
     "layout": { "longOutline": false },
-    "pdfDownloadUrl": "", // 儲存前台下載網址
+    "pdfDownloadUrl": "", 
     "theme": {
         "title": "神坐著為王： 一無所懼，一無所缺",
         "speaker": "葉志偉 牧師",
@@ -296,8 +296,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
         </div>
 
         <div className="pdf-content-grid">
-          {/* 左欄 */}
-          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 210px' }}>
+          {/* 左欄：高度放大至 225px 解決截斷 */}
+          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 225px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
               <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
@@ -329,8 +329,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             )}
           </div>
 
-          {/* 右欄 */}
-          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 210px' }}>
+          {/* 右欄：高度放大至 225px 解決截斷 */}
+          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 225px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
               <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
@@ -365,7 +365,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                 <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
                   <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
-                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: 0 }}>敬拜歌曲</div>
+                  {/* 長大綱模式：加上 marginTop 確保與左側表格對齊 */}
+                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
                   <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
                     {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                   </ol>
@@ -378,7 +379,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             ) : (
               <div className="pdf-card">
                 <div className="pdf-card-title">🎵 敬拜詩歌</div>
-                <div className="song-category-title">敬拜歌曲</div>
+                {/* 標準模式：加上 marginTop: 4px 讓它跟左側表格完美水平切齊 */}
+                <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
                 <ol className="custom-list">
                   {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                 </ol>
@@ -624,7 +626,6 @@ function App() {
     setIsExporting(false);
   };
 
-  // ✅ 新增：上傳 PDF 至 Firebase Storage 供前台下載
   const publishPDFToCloud = async () => {
     setIsExporting(true);
     showToast('正在產生並上傳 PDF，請勿關閉視窗...');
@@ -646,12 +647,9 @@ function App() {
       const fileName = `bulletins/風一族週報_${data.bulletinDate}.pdf`;
       const fileRef = storageRef.child(fileName);
       
-      // 上傳至 Firebase Storage
       await fileRef.put(pdfBlob);
-      // 取得公開下載網址
       const downloadUrl = await fileRef.getDownloadURL();
       
-      // 將網址存回資料庫，供前台讀取
       const nextData = { ...data, pdfDownloadUrl: downloadUrl };
       setData(nextData);
       await db.ref('bulletin_data').set(nextData);
@@ -837,6 +835,7 @@ function App() {
                 </div>
                 
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                  
                   {groupTab === 'special' && (
                     <Field label="所屬分類">
                       <select value={g.category || '特色'} onChange={e=>{
@@ -850,21 +849,25 @@ function App() {
                       </select>
                     </Field>
                   )}
+
                   <Field label="小組名稱"><input value={g.name || ''} onChange={e=>{
                      const newList = [...currentList];
                      newList[idx] = {...newList[idx], name: e.target.value};
                      update(currentPath, newList);
                   }}/></Field>
+                  
                   <Field label="帶領人 / 牧師"><input value={g.leader || ''} onChange={e=>{
                      const newList = [...currentList];
                      newList[idx] = {...newList[idx], leader: e.target.value};
                      update(currentPath, newList);
                   }}/></Field>
+                  
                   <Field label="時間"><input value={g.time || ''} onChange={e=>{
                      const newList = [...currentList];
                      newList[idx] = {...newList[idx], time: e.target.value};
                      update(currentPath, newList);
                   }}/></Field>
+                  
                   <Field label="地點">
                     {groupTab === 'weekday' || groupTab === 'sunday' ? (
                       <select value={g.loc || '請洽小組長'} onChange={e=>{
@@ -896,6 +899,7 @@ function App() {
                       </>
                     )}
                   </Field>
+                  
                   {groupTab === 'overseas' && (
                     <Field label="國旗 (Emoji)"><input value={g.flag || ''} placeholder="例如: 🇬🇧" onChange={e=>{
                        const newList = [...currentList];
@@ -980,7 +984,6 @@ function App() {
       
       case 'preview': return (
         <div>
-           {/* 大綱長篇模式切換功能 */}
            <div className="no-print" style={{ background: '#0a0a0a', border: '1px solid #333', padding: '12px 16px', borderRadius: '8px', marginBottom: '15px' }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#4ade80', fontSize: '14px', fontWeight: 'bold' }}>
                   <input 
@@ -993,7 +996,6 @@ function App() {
               </label>
            </div>
 
-           {/* 動態警告橫幅 */}
            <div className="no-print" style={{ 
              display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
              background: isOverflowing ? '#fee2e2' : '#f0fdf4', 
@@ -1013,7 +1015,6 @@ function App() {
              </div>
            </div>
            
-           {/* 匯出與發佈工具列 */}
            <div className="no-print" style={{ background: '#161616', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
              <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 電腦端快速下載：</span>
              
@@ -1029,7 +1030,6 @@ function App() {
              
              <span style={{flex: 1}}></span>
              
-             {/* 發佈 PDF 至雲端供前台使用 */}
              <Btn variant="primary" style={{ background: '#3b82f6', borderColor: '#3b82f6', color: '#fff' }} onClick={publishPDFToCloud} disabled={isExporting}>
                {isExporting ? '處理中...' : '☁️ 產生 PDF 並發佈至前台'}
              </Btn>
@@ -1050,19 +1050,17 @@ function App() {
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
       
-      {/* 修改 Header 結構 */}
       <div className="no-print" style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.7</div>
+            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v2.6</div>
             <div style={{fontSize:'11px', color: isConnected ? '#4ade80' : '#888'}}>
                 {isConnected ? '● 已連線雲端' : '○ 載入中...'}
             </div>
           </div>
         </div>
         
-        {/* 新版按鈕區：儲存左，預覽右 */}
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <Btn variant="default" onClick={save} disabled={isSaving || !isConnected}>
               {isSaving ? '更新中...' : '💾 更新資訊'}
@@ -1083,7 +1081,6 @@ function App() {
 
       <div style={{display:'flex', flex:1}}>
         
-        {/* 固定側邊欄 */}
         <div className="no-print sidebar-fixed">
           {navItems.map(item=>(
             <button key={item.id} onClick={()=>setActiveSection(item.id)} style={{
