@@ -296,8 +296,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
         </div>
 
         <div className="pdf-content-grid">
-          {/* 左欄：高度放大至 225px 解決截斷 */}
-          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 225px' }}>
+          {/* 左欄：高度改回 210px */}
+          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 210px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">📖 信息大綱</div>
               <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
@@ -329,8 +329,8 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             )}
           </div>
 
-          {/* 右欄：高度放大至 225px 解決截斷 */}
-          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 225px' }}>
+          {/* 右欄：高度改回 210px */}
+          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 210px' }}>
             <div className="pdf-card">
               <div className="pdf-card-title">🔔 教會消息</div>
               <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
@@ -365,8 +365,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                 <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
                   <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
-                  {/* 長大綱模式：加上 marginTop 確保與左側表格對齊 */}
-                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
+                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: 0 }}>敬拜歌曲</div>
                   <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
                     {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                   </ol>
@@ -379,15 +378,21 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             ) : (
               <div className="pdf-card">
                 <div className="pdf-card-title">🎵 敬拜詩歌</div>
-                {/* 標準模式：加上 marginTop: 4px 讓它跟左側表格完美水平切齊 */}
-                <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
-                <ol className="custom-list">
-                  {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
-                </ol>
-                <div className="song-category-title" style={{ marginTop: '8px' }}>回應詩歌</div>
-                <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '8px' }}>
-                  {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
+                {/* 標準模式：改為左右雙欄並排，解決高度縮減後的排版擁擠 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: '1 1 0%' }}>
+                  <div>
+                    <div className="song-category-title" style={{ marginTop: '0px' }}>敬拜歌曲</div>
+                    <ol className="custom-list">
+                      {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
+                  </div>
+                  <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
+                    <div className="song-category-title" style={{ marginTop: '0px' }}>回應詩歌</div>
+                    <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px' }}>
+                      {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -836,6 +841,7 @@ function App() {
                 
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
                   
+                  {/* 特色/讀經/外縣市 分類下拉選單 */}
                   {groupTab === 'special' && (
                     <Field label="所屬分類">
                       <select value={g.category || '特色'} onChange={e=>{
@@ -868,6 +874,7 @@ function App() {
                      update(currentPath, newList);
                   }}/></Field>
                   
+                  {/* 使用 Datalist 結合 Input，達成可選擇可輸入 */}
                   <Field label="地點">
                     {groupTab === 'weekday' || groupTab === 'sunday' ? (
                       <select value={g.loc || '請洽小組長'} onChange={e=>{
@@ -883,7 +890,7 @@ function App() {
                       <>
                         <input 
                           list={`loc-options-${idx}`} 
-                          placeholder="可自行輸入或選擇"
+                          placeholder="可下拉選擇或自行輸入地址"
                           value={g.loc || ''} 
                           onChange={e=>{
                            const newList = [...currentList];
@@ -984,6 +991,7 @@ function App() {
       
       case 'preview': return (
         <div>
+           {/* 大綱長篇模式切換功能 */}
            <div className="no-print" style={{ background: '#0a0a0a', border: '1px solid #333', padding: '12px 16px', borderRadius: '8px', marginBottom: '15px' }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#4ade80', fontSize: '14px', fontWeight: 'bold' }}>
                   <input 
@@ -996,6 +1004,7 @@ function App() {
               </label>
            </div>
 
+           {/* 動態警告橫幅 */}
            <div className="no-print" style={{ 
              display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
              background: isOverflowing ? '#fee2e2' : '#f0fdf4', 
@@ -1015,8 +1024,9 @@ function App() {
              </div>
            </div>
            
+           {/* 匯出下載工具列 */}
            <div className="no-print" style={{ background: '#161616', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-             <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 電腦端快速下載：</span>
+             <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 快速下載：</span>
              
              <Btn size="sm" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
              <Btn size="sm" onClick={() => exportToImage('page-1', 'jpeg')} disabled={isExporting}>P1 (JPEG)</Btn>
@@ -1039,6 +1049,7 @@ function App() {
              </Btn>
            </div>
            
+           {/* 傳遞 useRef 用於 DOM 尺寸計算 */}
            <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />
         </div>
       );
@@ -1049,7 +1060,6 @@ function App() {
 
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
-      
       <div className="no-print" style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
@@ -1060,7 +1070,6 @@ function App() {
             </div>
           </div>
         </div>
-        
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
           <Btn variant="default" onClick={save} disabled={isSaving || !isConnected}>
               {isSaving ? '更新中...' : '💾 更新資訊'}
@@ -1080,7 +1089,6 @@ function App() {
       </div>
 
       <div style={{display:'flex', flex:1}}>
-        
         <div className="no-print sidebar-fixed">
           {navItems.map(item=>(
             <button key={item.id} onClick={()=>setActiveSection(item.id)} style={{
@@ -1094,7 +1102,6 @@ function App() {
              <Btn size="sm" style={{width:'100%'}} onClick={()=>navigator.clipboard.writeText(JSON.stringify(data)).then(()=>showToast('JSON 已複製'))}>複製全域資料</Btn>
           </div>
         </div>
-
         <div style={{flex:1, padding:'30px', overflowY:'auto', background:'#0f0f0f'}}>
           <div style={{maxWidth:'800px', margin:'0 auto'}}>{renderSection()}</div>
         </div>
