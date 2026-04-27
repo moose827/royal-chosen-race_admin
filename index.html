@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>風一族週報後台管理系統 v4.1 (優化版)</title>
+<title>風一族週報後台管理系統 v4.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script>
@@ -84,7 +84,7 @@
   .icon-btn {
     background: transparent; border: none; color: var(--text-muted);
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 50%; width: 40px; height: 40px; transition: all 0.2s; cursor: pointer;
+    border-radius: 50%; width: 40px; height: 40px; transition: all 0.2s;
   }
   .icon-btn:hover:not(:disabled) { background: var(--bg-input); color: var(--text-main); }
   .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -111,24 +111,23 @@
     padding: 24px 12px; position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto;
   }
 
+  /* 表單排版 */
   .form-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .form-grid-announce { display: grid; grid-template-columns: 120px 1fr; gap: 12px; }
   .schedule-grid { display: grid; grid-template-columns: 30px minmax(0, 100px) minmax(0, 100px) 1fr auto; gap: 12px; align-items: center; }
 
+  /* 登入畫面 */
   .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg-main); padding: 20px;}
   .login-card { background: var(--bg-card); padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid var(--border-main); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-  /* ================= A4 預覽與列印防護 ================= */
+  /* 預覽區防護罩 */
   .a4-preview-wrapper { width: 100%; overflow-x: auto; padding-bottom: 24px; -webkit-overflow-scrolling: touch; }
   .a4-container { display: flex; flex-direction: column; gap: 24px; width: max-content; margin: 0 auto; }
-  
   .a4-page {
     width: 210mm; height: 295mm; overflow: hidden; background: white; color: #333;
-    padding: 8mm 10mm; padding-right: 12mm; /* html2canvas 文字截斷緩衝 2mm */
-    box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif;
+    padding: 8mm 10mm; box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif;
     position: relative; display: flex; flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3); border-radius: 4px;
-    word-break: break-all; text-align: justify; line-break: strict; /* 亞洲排版優化：避頭尾點 */
   }
   
   @media print {
@@ -143,6 +142,7 @@
     .a4-page { box-shadow: none; border-radius: 0; page-break-after: always; height: 297mm; }
   }
 
+  /* ================= 手機版優化 ================= */
   @media (max-width: 768px) {
     input, textarea, select { font-size: 16px; }
     .admin-header { padding: 12px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
@@ -176,7 +176,7 @@
     }
   }
 
-  /* --- A4 內部排版 --- */
+  /* --- A4 內部排版維持原樣 --- */
   .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--brand-blue); padding-bottom: 12px; margin-bottom: 10px; flex-shrink: 0; }
   .pdf-logo-area { display: flex; align-items: center; gap: 10px; }
   .pdf-logo-text { color: var(--brand-blue); font-weight: 700; font-size: 26px; letter-spacing: 1px; }
@@ -254,33 +254,17 @@ const DEFAULT_DATA = {
     "office": { "name": "馬可樓辦公室", "phone": "(02) 8772-7857", "address": "台北市大安區市民大道三段 148 號 4 樓" }
 };
 
-// 深度合併函數：防護 undefined 造成的畫面崩潰
-const mergeData = (sourceData) => {
-    if (!sourceData) return DEFAULT_DATA;
-    return {
-        ...DEFAULT_DATA,
-        ...sourceData,
-        layout: { ...DEFAULT_DATA.layout, ...(sourceData.layout || {}) },
-        theme: { ...DEFAULT_DATA.theme, ...(sourceData.theme || {}) },
-        sermonOutline: sourceData.sermonOutline || DEFAULT_DATA.sermonOutline,
-        songs: { ...DEFAULT_DATA.songs, ...(sourceData.songs || {}) },
-        schedule: sourceData.schedule || DEFAULT_DATA.schedule,
-        groups: { ...DEFAULT_DATA.groups, ...(sourceData.groups || {}) },
-        overseas: sourceData.overseas || [],
-        announcements: sourceData.announcements || DEFAULT_DATA.announcements,
-        offering: { ...DEFAULT_DATA.offering, ...(sourceData.offering || {}) },
-        office: { ...DEFAULT_DATA.office, ...(sourceData.office || {}) }
-    };
-};
-
 // ================= UI 元件 =================
 const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false, style={}}) => {
-  const base = "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 border whitespace-nowrap rounded-full cursor-pointer";
+  const base = "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 border whitespace-nowrap rounded-full";
   const variants = {
+    // 高對比主要按鈕 (儲存)
     primary: "bg-[var(--primary)] border-[var(--primary)] text-[var(--on-primary)] shadow-sm hover:bg-[var(--primary-hover)]",
-    success: "bg-[var(--success)] border-[var(--success)] text-[#121212] shadow-sm hover:brightness-90",
+    // 高對比次要按鈕 (預覽/白色)
     elevated: "bg-[var(--secondary)] border-transparent text-[var(--on-secondary)] shadow-sm hover:brightness-90",
+    // 虛線按鈕 (新增類)
     dashed: "bg-[rgba(138,180,248,0.05)] border border-dashed border-[var(--border-hover)] text-[var(--primary)] hover:bg-[rgba(138,180,248,0.15)] hover:border-[var(--primary)]",
+    // 一般框線按鈕
     default: "bg-transparent border-[var(--border-main)] text-[var(--primary)] hover:bg-[var(--bg-input)] hover:border-[var(--border-hover)]",
     danger: "bg-transparent border-[var(--danger)] text-[var(--danger)] hover:bg-[rgba(242,139,130,0.1)]",
     ghost: "bg-transparent border-transparent text-[var(--text-main)] hover:bg-[var(--bg-input)]"
@@ -305,16 +289,14 @@ const Field = ({label, children}) => <div style={{marginBottom:'16px'}}><label>{
 
 // ================= 預覽 A4 介面 =================
 const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
-  if (!data) return null;
-  const safeDate = data.bulletinDate || '2026-04-26';
-  const parts = safeDate.split('-');
+  const parts = data.bulletinDate.split('-');
   const year = parts[0] || '2026';
   const mmdd = parts.length === 3 ? `${parts[1]}/${parts[2]}` : '12/26';
 
-  const isLongOutline = data.layout && data.layout.longOutline;
-  const specialGroups = (data.groups && data.groups.special) ? data.groups.special.filter(g => g.category === '特色' || !g.category) : [];
-  const readingGroups = (data.groups && data.groups.special) ? data.groups.special.filter(g => g.category === '讀經') : [];
-  const outOfTownGroups = (data.groups && data.groups.special) ? data.groups.special.filter(g => g.category === '外縣市') : [];
+  const isLongOutline = data.layout?.longOutline || false;
+  const specialGroups = data.groups.special.filter(g => g.category === '特色' || !g.category);
+  const readingGroups = data.groups.special.filter(g => g.category === '讀經');
+  const outOfTownGroups = data.groups.special.filter(g => g.category === '外縣市');
 
   return (
     <div className="a4-preview-wrapper hide-scrollbar">
@@ -359,10 +341,10 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
               <div className="pdf-card">
                 <div className="pdf-card-title">📖 信息大綱</div>
                 <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
-                  {(data.sermonOutline || []).map((item, idx) => (
+                  {data.sermonOutline.map((item, idx) => (
                     <div key={idx} style={{marginBottom: '8px'}}>
                       <div className="content-heading">{item.title}</div>
-                      {(item.content || []).map((c, ci) => (
+                      {item.content.map((c, ci) => (
                         <div key={ci} className="outline-text">{c}</div>
                       ))}
                     </div>
@@ -375,7 +357,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                   <div className="pdf-card-title">📅 聚會流程</div>
                   <table className="clean-schedule-table">
                     <tbody>
-                      {(data.schedule || []).map((item, idx) => (
+                      {data.schedule.map((item, idx) => (
                         <tr key={idx}>
                           <td style={{ fontWeight:'bold', width: '90px' }}>{item.start}-{item.end}</td>
                           <td>{item.task}</td>
@@ -391,13 +373,13 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
               <div className="pdf-card">
                 <div className="pdf-card-title">🔔 教會消息</div>
                 <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
-                  {(data.announcements || []).map((a, idx) => (
+                  {data.announcements.map((a, idx) => (
                     <div key={idx} style={{ marginBottom: '10px' }}>
                       <div className="content-heading">
                         {["一","二","三","四","五"][idx] || idx+1}、{a.title}
                       </div>
                       <ul className="custom-list">
-                        {(a.detail || '').split('\n').map((line, li) => <li key={li}>{line}</li>)}
+                        {a.detail.split('\n').map((line, li) => <li key={li}>{line}</li>)}
                       </ul>
                     </div>
                   ))}
@@ -410,7 +392,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                     <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>📅 聚會流程</div>
                     <table className="clean-schedule-table" style={{ fontSize: '12.5px' }}>
                       <tbody>
-                        {(data.schedule || []).map((item, idx) => (
+                        {data.schedule.map((item, idx) => (
                           <tr key={idx}>
                             <td style={{ fontWeight:'bold', width: '80px', padding: '2px 0' }}>{item.start}-{item.end}</td>
                             <td style={{ padding: '2px 0' }}>{item.task}</td>
@@ -424,11 +406,11 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                     <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
                     <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
                     <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
-                      {(data.songs && data.songs.worship ? data.songs.worship : []).map((s, i) => <li key={i}>{s}</li>)}
+                      {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                     </ol>
                     <div className="song-category-title" style={{ fontSize: '12.5px' }}>回應詩歌</div>
                     <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px', fontSize: '12.5px' }}>
-                      {(data.songs && data.songs.response ? data.songs.response : []).map((s, i) => <li key={i}>{s}</li>)}
+                      {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
                     </ul>
                   </div>
                 </div>
@@ -439,13 +421,13 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
                     <div>
                       <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
                       <ol className="custom-list">
-                        {(data.songs && data.songs.worship ? data.songs.worship : []).map((s, i) => <li key={i}>{s}</li>)}
+                        {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                       </ol>
                     </div>
                     <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
                       <div className="song-category-title" style={{ marginTop: '4px' }}>回應詩歌</div>
                       <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px' }}>
-                        {(data.songs && data.songs.response ? data.songs.response : []).map((s, i) => <li key={i}>{s}</li>)}
+                        {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
                       </ul>
                     </div>
                   </div>
@@ -465,7 +447,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             <table className="pdf-table">
               <thead><tr><th>週間小組名稱</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
               <tbody>
-                {(data.groups && data.groups.weekday ? data.groups.weekday : []).map((g, i) => (
+                {data.groups.weekday.map((g, i) => (
                   <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
                 ))}
               </tbody>
@@ -473,7 +455,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             <table className="pdf-table">
               <thead><tr><th>主日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
               <tbody>
-                {(data.groups && data.groups.sunday ? data.groups.sunday : []).map((g, i) => (
+                {data.groups.sunday.map((g, i) => (
                   <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
                 ))}
               </tbody>
@@ -521,7 +503,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
           <div className="pdf-card" style={{ marginBottom: '20px' }}>
             <div className="pdf-card-title">🌍 海外分會</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              {(data.overseas || []).map((o, i) => (
+              {data.overseas.map((o, i) => (
                 <div key={i} style={{ fontSize: '13px', color: '#222', lineHeight: '1.6' }}>
                   <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px', marginBottom: '4px' }}>{o.flag} {o.name}</div>
                   <div>牧師：{o.leader}</div>
@@ -536,17 +518,17 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
             <div>
               <div className="pdf-dark-title">🎁 奉獻帳戶資訊</div>
               <div className="pdf-dark-text">
-                戶名：{data.offering && data.offering.name}<br/>
-                帳號：{data.offering && data.offering.bank} &nbsp; {data.offering && data.offering.account}<br/>
+                戶名：{data.offering.name}<br/>
+                帳號：{data.offering.bank} &nbsp; {data.offering.account}<br/>
                 <span style={{ borderBottom: '1px solid #cbd5e1', marginTop: '4px', display: 'inline-block' }}>* 透過銀行轉帳奉獻後，請通知辦公室同工 *</span>
               </div>
             </div>
             <div>
               <div className="pdf-dark-title">📞 聯絡我們</div>
               <div className="pdf-dark-text">
-                {data.office && data.office.name}<br/>
-                電話：{data.office && data.office.phone}<br/>
-                地址：{data.office && data.office.address}
+                {data.office.name}<br/>
+                電話：{data.office.phone}<br/>
+                地址：{data.office.address}
               </div>
             </div>
           </div>
@@ -577,12 +559,6 @@ function App() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
-  // UX優化 1.A 防呆預處理：智慧標點轉換
-  const formatPunctuation = (val) => {
-    if (typeof val !== 'string') return val;
-    return val.replace(/\(/g, '（').replace(/\)/g, '）');
-  };
-
   // 驗證狀態監聽
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(u => {
@@ -598,54 +574,26 @@ function App() {
     catch (err) { showToast('❌ 登入失敗：' + err.message); }
   };
 
-  // 資料監聽 (登入後) 與 LocalStorage 草稿載入 (含 try-catch 安全防護)
+  // 資料監聽 (登入後)
   useEffect(() => {
     if (!user) return;
     const bulletinRef = db.ref('bulletin_data');
-    let isInitialLoad = true;
-
     bulletinRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
-      const loadData = mergeData(cloudData); // 系統強健性：強制套用深度預設資料填補遺失欄位，防止程式當機
-
-      if (isInitialLoad) {
-        const draftStr = localStorage.getItem('bulletin_draft');
-        if (draftStr) {
-          try {
-              const parsedDraft = mergeData(JSON.parse(draftStr));
-              if (window.confirm("偵測到未儲存的變更草稿，是否還原？\n(按「確定」載入草稿，按「取消」載入雲端資料)")) {
-                setData(parsedDraft);
-              } else {
-                setData(loadData);
-                localStorage.removeItem('bulletin_draft');
-              }
-          } catch(e) {
-              // 草稿 JSON 損毀防護
-              setData(loadData);
-              localStorage.removeItem('bulletin_draft');
-          }
-        } else {
-          setData(loadData);
-        }
-        isInitialLoad = false;
+      if (cloudData) {
+        if (!cloudData.layout) cloudData.layout = { longOutline: false };
+        setData(cloudData);
       } else {
-        setData(loadData);
+        setData(DEFAULT_DATA);
       }
       setIsConnected(true);
     });
     return () => bulletinRef.off();
   }, [user]);
 
-  // 系統強健性：草稿自動儲存 (localStorage)
+  // 溢出偵測
   useEffect(() => {
-    if (data && isConnected) {
-      localStorage.setItem('bulletin_draft', JSON.stringify(data));
-    }
-  }, [data, isConnected]);
-
-  // 動態提醒：溢出偵測 (移除 activeSection 依賴，使背景預覽能持續運算)
-  useEffect(() => {
-    if (!data) return;
+    if (activeSection !== 'preview' || !data) return;
     const checkOverflow = () => {
       let overflow = false;
       if (outlineRef.current && outlineRef.current.scrollHeight > Math.ceil(outlineRef.current.clientHeight) + 2) overflow = true;
@@ -653,9 +601,8 @@ function App() {
       setIsOverflowing(overflow);
     };
     checkOverflow();
-    const timer = setTimeout(checkOverflow, 300);
-    return () => clearTimeout(timer);
-  }, [data]);
+    setTimeout(checkOverflow, 300);
+  }, [data, activeSection]);
 
   if (isAuthLoading) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>載入中...</div>;
 
@@ -668,7 +615,7 @@ function App() {
             <div style={{width:'48px', height:'48px', background:'var(--primary)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)', margin:'0 auto 16px'}}>
               <span className="material-symbols-outlined" style={{fontSize:'28px'}}>church</span>
             </div>
-            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.1</h2>
+            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.0</h2>
           </div>
           <form onSubmit={handleLogin}>
             <Field label="帳號 (Email)"><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></Field>
@@ -684,22 +631,15 @@ function App() {
   // ================= 功能函數 =================
   const save = async () => {
     setIsSaving(true);
-    db.ref('bulletin_data').set(data).then(() => {
-        showToast('🚀 儲存成功！');
-        localStorage.removeItem('bulletin_draft');
-    }).catch((err) => showToast('❌ 儲存失敗：' + err.message)).finally(() => setIsSaving(false));
+    db.ref('bulletin_data').set(data).then(() => showToast('🚀 儲存成功！')).catch((err) => showToast('❌ 儲存失敗：' + err.message)).finally(() => setIsSaving(false));
   };
 
   const update = (path, value) => {
     setData(prev => {
       const next = JSON.parse(JSON.stringify(prev));
       const keys = path.split('.'); let obj = next;
-      for (let i=0; i<keys.length-1; i++) {
-          if (!obj[keys[i]]) obj[keys[i]] = {}; 
-          obj = obj[keys[i]];
-      }
-      obj[keys[keys.length-1]] = formatPunctuation(value); // 統一進行標點防呆處理
-      return next;
+      for (let i=0; i<keys.length-1; i++) obj = obj[keys[i]];
+      obj[keys[keys.length-1]] = value; return next;
     });
   };
 
@@ -713,19 +653,12 @@ function App() {
   };
 
   const calculateWeekNumber = () => {
-    const d = new Date(data.bulletinDate || '');
+    const d = new Date(data.bulletinDate);
     if (isNaN(d.getTime())) return showToast('日期格式錯誤');
     const day = d.getDate(); const weekIdx = Math.ceil(day / 7);
     const chineseWeeks = ["第一週", "第二週", "第三週", "第四週", "第五週"];
-    const result = chineseWeeks[weekIdx-1] || "第一週";
-    update('weekNumber', result);
-    showToast(`自動設定為 ${result}`);
-  };
-
-  // 檔案管理優化：自動命名規範
-  const getExportFileName = (suffix) => {
-    const dateStr = (data.bulletinDate || '').replace(/-/g, '');
-    return `${dateStr}_風一族週報_${suffix}`;
+    update('weekNumber', chineseWeeks[weekIdx-1] || "第一週");
+    showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
   };
 
   // ================= 匯出與雲端發佈功能 =================
@@ -734,11 +667,9 @@ function App() {
     showToast('影像產出中，請稍候...');
     try {
       const el = document.getElementById(pageId);
-      // 解析度提升：scale 3 解決圖檔與 PDF 毛邊問題
-      const canvas = await html2canvas(el, { scale: 3, useCORS: true });
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
       const link = document.createElement('a');
-      const suffixName = pageId === 'page-1' ? '正面(含信息大綱)' : '背面(含小組資訊)';
-      link.download = getExportFileName(`${suffixName}.${format}`);
+      link.download = `風一族週報_${pageId}.${format}`;
       link.href = canvas.toDataURL(`image/${format}`);
       link.click();
     } catch (err) {
@@ -757,19 +688,17 @@ function App() {
       const p2 = document.getElementById('page-2');
 
       if (mode === 'page1' || mode === 'all') {
-        const canvas1 = await html2canvas(p1, { scale: 3, useCORS: true });
+        const canvas1 = await html2canvas(p1, { scale: 2, useCORS: true });
         pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       }
 
       if (mode === 'all') pdf.addPage();
 
       if (mode === 'page2' || mode === 'all') {
-        const canvas2 = await html2canvas(p2, { scale: 3, useCORS: true });
+        const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
         pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       }
-      
-      const suffixName = mode === 'all' ? '完整雙面' : (mode === 'page1' ? '正面' : '背面');
-      pdf.save(getExportFileName(`${suffixName}.pdf`));
+      pdf.save(mode === 'all' ? '風一族週報_完整版.pdf' : `風一族週報_${mode}.pdf`);
     } catch (err) {
       showToast('❌ 匯出 PDF 失敗：' + err.message);
     }
@@ -785,8 +714,8 @@ function App() {
       
       const p1 = document.getElementById('page-1');
       const p2 = document.getElementById('page-2');
-      const canvas1 = await html2canvas(p1, { scale: 3, useCORS: true });
-      const canvas2 = await html2canvas(p2, { scale: 3, useCORS: true });
+      const canvas1 = await html2canvas(p1, { scale: 2, useCORS: true });
+      const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
       
       pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       pdf.addPage();
@@ -794,7 +723,7 @@ function App() {
       
       const pdfBlob = pdf.output('blob');
       const storageRef = storage.ref();
-      const fileName = `bulletins/${getExportFileName('線上版.pdf')}`;
+      const fileName = `bulletins/風一族週報_${data.bulletinDate}.pdf`;
       const fileRef = storageRef.child(fileName);
       
       await fileRef.put(pdfBlob);
@@ -812,6 +741,7 @@ function App() {
     setIsExporting(false);
   };
 
+
   // ================= 區塊渲染 =================
   const renderSection = () => {
     if (!data) return <div style={{padding:'20px'}}>讀取資料中...</div>;
@@ -821,7 +751,7 @@ function App() {
         <Card>
           <SectionTitle>基本資訊</SectionTitle>
           <div className="form-grid-2" style={{ marginBottom: '16px' }}>
-            <Field label="週報日期"><input type="date" value={data.bulletinDate || ''} onChange={e=>update('bulletinDate', e.target.value)}/></Field>
+            <Field label="週報日期"><input type="date" value={data.bulletinDate} onChange={e=>update('bulletinDate', e.target.value)}/></Field>
             <Field label={
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                 <span>第幾週</span>
@@ -829,9 +759,9 @@ function App() {
                   <span className="material-symbols-outlined" style={{fontSize:'14px'}}>auto_awesome</span> 自動計算
                 </span>
               </div>
-            }><input value={data.weekNumber || ''} placeholder="例如：第一週" onChange={e=>update('weekNumber', e.target.value)}/></Field>
+            }><input value={data.weekNumber} placeholder="例如：第一週" onChange={e=>update('weekNumber', e.target.value)}/></Field>
           </div>
-          <Field label="年度異象"><input value={data.vision || ''} onChange={e=>update('vision', e.target.value)}/></Field>
+          <Field label="年度異象"><input value={data.vision} onChange={e=>update('vision', e.target.value)}/></Field>
         </Card>
       );
 
@@ -840,49 +770,50 @@ function App() {
           <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px', alignItems:'center'}}>
             <span style={{color:'var(--text-muted)', fontSize:'13px'}}>提示：輸入空白內容可自動縮排。</span>
           </div>
-          {(data.sermonOutline || []).map((item, idx)=>(
+          {data.sermonOutline.map((item, idx)=>(
             <Card key={idx}>
               <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px'}}>
                 <div style={{display:'flex', alignItems:'center', flex:1}}>
                   <span style={{color:'var(--primary)', fontWeight:'bold', marginRight:'16px', whiteSpace:'nowrap'}}>段落 {idx+1}</span>
-                  <SortControls isFirst={idx===0} isLast={idx===(data.sermonOutline || []).length-1} onMoveUp={()=>moveItem('sermonOutline', idx, idx-1)} onMoveDown={()=>moveItem('sermonOutline', idx, idx+1)} />
+                  <SortControls isFirst={idx===0} isLast={idx===data.sermonOutline.length-1} onMoveUp={()=>moveItem('sermonOutline', idx, idx-1)} onMoveDown={()=>moveItem('sermonOutline', idx, idx+1)} />
                 </div>
                 <button className="icon-btn" style={{color: 'var(--danger)'}} onClick={()=>{
-                  const n = (data.sermonOutline || []).filter((_,i)=>i!==idx); update('sermonOutline', n);
+                  const n = data.sermonOutline.filter((_,i)=>i!==idx); update('sermonOutline', n);
                 }}><span className="material-symbols-outlined">delete</span></button>
               </div>
               
-              <Field label="段落標題"><input value={item.title || ''} onChange={e=>{
-                const n = [...(data.sermonOutline || [])]; n[idx].title = formatPunctuation(e.target.value); update('sermonOutline', n);
+              <Field label="段落標題"><input value={item.title} onChange={e=>{
+                const n = [...data.sermonOutline]; n[idx].title = e.target.value; update('sermonOutline', n);
               }}/></Field>
               
               <label>內容要點</label>
-              {(item.content || []).map((c, ci)=>(
+              {item.content.map((c, ci)=>(
                 <div key={ci} style={{display:'flex', gap:'8px', marginBottom:'8px', alignItems:'flex-start'}}>
                   <div style={{fontSize:'12px', color:'var(--text-muted)', width:'20px', marginTop:'12px', textAlign:'right'}}>{ci+1}.</div>
                   <div style={{flex:1, position:'relative'}}>
-                    <textarea value={c || ''} onChange={e=>{
-                      const n = [...(data.sermonOutline || [])]; n[idx].content[ci] = formatPunctuation(e.target.value); update('sermonOutline', n);
+                    <textarea value={c} onChange={e=>{
+                      const n = [...data.sermonOutline]; n[idx].content[ci] = e.target.value; update('sermonOutline', n);
                     }} style={{minHeight:'60px'}}/>
                   </div>
                   <div style={{display:'flex', flexDirection:'column', gap:'4px', marginTop:'4px'}}>
                     <button className="icon-btn" onClick={()=>{
-                        const n = [...(data.sermonOutline || [])]; n[idx].content.splice(ci,1); update('sermonOutline', n);
+                        const n = [...data.sermonOutline]; n[idx].content.splice(ci,1); update('sermonOutline', n);
                     }}><span className="material-symbols-outlined" style={{fontSize:'18px', color:'var(--danger)'}}>close</span></button>
-                    <SortControls isFirst={ci===0} isLast={ci===(item.content || []).length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
+                    <SortControls isFirst={ci===0} isLast={ci===item.content.length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
                   </div>
                 </div>
               ))}
               
               {/* 置底：新增要點 */}
               <Btn size="sm" variant="dashed" onClick={()=>{
-                const n = [...(data.sermonOutline || [])]; n[idx].content.push(''); update('sermonOutline', n);
+                const n = [...data.sermonOutline]; n[idx].content.push(''); update('sermonOutline', n);
               }} style={{marginTop:'12px', width:'100%', padding:'10px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>add</span> 新增要點</Btn>
             </Card>
           ))}
           
+          {/* 置底：新增段落 */}
           <Btn size="lg" variant="dashed" onClick={()=>{
-              const n = [...(data.sermonOutline || []), {title:'', content:[]}]; update('sermonOutline', n);
+              const n = [...data.sermonOutline, {title:'', content:[]}]; update('sermonOutline', n);
             }} style={{ width: '100%', borderRadius: '12px' }}>
             <span className="material-symbols-outlined">add_circle</span> 新增段落
           </Btn>
@@ -895,20 +826,21 @@ function App() {
           {['worship', 'response'].map(type => (
             <div key={type} style={{marginBottom:'32px'}}>
               <label style={{color:'var(--primary)', fontWeight:'bold', fontSize:'14px'}}>{type === 'worship' ? '1. 敬拜歌曲' : '2. 回應詩歌'}</label>
-              {((data.songs && data.songs[type]) ? data.songs[type] : []).map((s, i)=>(
+              {data.songs[type].map((s, i)=>(
                 <div key={i} className="list-item-row">
                   <span style={{color:'var(--text-muted)', marginRight:'12px', fontWeight:'bold'}}>{i+1}.</span>
-                  <input value={s || ''} style={{flex:1, border:'none', background:'transparent', padding:'0'}} onChange={e=>{
-                    const n = [...(data.songs[type] || [])]; n[i] = formatPunctuation(e.target.value); update(`songs.${type}`, n);
+                  <input value={s} style={{flex:1, border:'none', background:'transparent', padding:'0'}} onChange={e=>{
+                    const n = [...data.songs[type]]; n[i] = e.target.value; update(`songs.${type}`, n);
                   }} placeholder="輸入詩歌名稱"/>
-                  <SortControls isFirst={i===0} isLast={i===(data.songs[type] || []).length-1} onMoveUp={()=>moveItem(`songs.${type}`, i, i-1)} onMoveDown={()=>moveItem(`songs.${type}`, i, i+1)} />
+                  <SortControls isFirst={i===0} isLast={i===data.songs[type].length-1} onMoveUp={()=>moveItem(`songs.${type}`, i, i-1)} onMoveDown={()=>moveItem(`songs.${type}`, i, i+1)} />
                   <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
-                    const n = (data.songs[type] || []).filter((_,idx)=>idx!==i); update(`songs.${type}`, n);
+                    const n = data.songs[type].filter((_,idx)=>idx!==i); update(`songs.${type}`, n);
                   }}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>close</span></button>
                 </div>
               ))}
+              {/* 置底：新增詩歌 */}
               <Btn size="sm" variant="dashed" onClick={()=>{
-                const n = [...(data.songs && data.songs[type] ? data.songs[type] : []), '']; update(`songs.${type}`, n);
+                const n = [...data.songs[type], '']; update(`songs.${type}`, n);
               }} style={{width:'100%', padding:'10px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>add</span> 新增詩歌</Btn>
             </div>
           ))}
@@ -918,33 +850,29 @@ function App() {
       case 'schedule': return (
         <Card>
           <SectionTitle>聚會流程</SectionTitle>
-          {(data.schedule || []).map((item, idx)=>(
+          {data.schedule.map((item, idx)=>(
             <div key={idx} className="list-item-row schedule-grid">
               <div className="idx" style={{color:'var(--text-muted)', fontWeight:'bold', textAlign:'center'}}>{idx+1}</div>
-              <input className="start" type="time" value={item.start || ''} onChange={e=>{
-                const n = [...(data.schedule || [])]; n[idx].start = e.target.value; update('schedule', n);
+              <input className="start" type="time" value={item.start} onChange={e=>{
+                const n = [...data.schedule]; n[idx].start = e.target.value; update('schedule', n);
               }}/>
-              <input className="end" type="time" value={item.end || ''} onChange={e=>{
-                const n = [...(data.schedule || [])]; n[idx].end = e.target.value; update('schedule', n);
-                // UX優化 1.B 表單操作直覺性：輸入結束時間後，自動 Focus 到該行的「流程項目(Task)」框
-                if(e.target.value.length === 5) {
-                   const t = e.target.parentElement.querySelector('.task');
-                   if(t) t.focus();
-                }
+              <input className="end" type="time" value={item.end} onChange={e=>{
+                const n = [...data.schedule]; n[idx].end = e.target.value; update('schedule', n);
               }}/>
-              <input className="task" value={item.task || ''} placeholder="流程項目" onChange={e=>{
-                const n = [...(data.schedule || [])]; n[idx].task = formatPunctuation(e.target.value); update('schedule', n);
+              <input className="task" value={item.task} placeholder="流程項目" onChange={e=>{
+                const n = [...data.schedule]; n[idx].task = e.target.value; update('schedule', n);
               }}/>
               <div className="controls" style={{display:'flex', alignItems:'center'}}>
-                <SortControls isFirst={idx===0} isLast={idx===(data.schedule || []).length-1} onMoveUp={()=>moveItem('schedule', idx, idx-1)} onMoveDown={()=>moveItem('schedule', idx, idx+1)} />
+                <SortControls isFirst={idx===0} isLast={idx===data.schedule.length-1} onMoveUp={()=>moveItem('schedule', idx, idx-1)} onMoveDown={()=>moveItem('schedule', idx, idx+1)} />
                 <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
-                   const n = (data.schedule || []).filter((_,i)=>i!==idx); update('schedule', n);
+                   const n = data.schedule.filter((_,i)=>i!==idx); update('schedule', n);
                 }}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>delete</span></button>
               </div>
             </div>
           ))}
+          {/* 置底：新增流程 */}
           <Btn size="lg" variant="dashed" onClick={()=>{
-            const n = [...(data.schedule || []), {start:'', end:'', task:''}]; update('schedule', n);
+            const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
           }} style={{ width: '100%', borderRadius: '12px', marginTop:'12px' }}>
             <span className="material-symbols-outlined">add_circle</span> 新增流程
           </Btn>
@@ -952,8 +880,7 @@ function App() {
       );
 
       case 'groups': {
-        const safeGroups = data.groups || {};
-        const currentList = groupTab === 'overseas' ? (data.overseas || []) : (safeGroups[groupTab] || []);
+        const currentList = groupTab === 'overseas' ? (data.overseas || []) : (data.groups?.[groupTab] || []);
         const currentPath = groupTab === 'overseas' ? 'overseas' : `groups.${groupTab}`;
 
         return (
@@ -994,13 +921,13 @@ function App() {
                     </Field>
                   )}
                   <Field label="小組名稱"><input value={g.name || ''} onChange={e=>{
-                     const newList = [...currentList]; newList[idx] = {...newList[idx], name: formatPunctuation(e.target.value)}; update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], name: e.target.value}; update(currentPath, newList);
                   }}/></Field>
                   <Field label="帶領人 / 牧師"><input value={g.leader || ''} onChange={e=>{
-                     const newList = [...currentList]; newList[idx] = {...newList[idx], leader: formatPunctuation(e.target.value)}; update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], leader: e.target.value}; update(currentPath, newList);
                   }}/></Field>
                   <Field label="時間"><input value={g.time || ''} onChange={e=>{
-                     const newList = [...currentList]; newList[idx] = {...newList[idx], time: formatPunctuation(e.target.value)}; update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], time: e.target.value}; update(currentPath, newList);
                   }}/></Field>
                   
                   <Field label="地點">
@@ -1015,7 +942,7 @@ function App() {
                     ) : (
                       <>
                         <input list={`loc-options-${idx}`} placeholder="可自行輸入或選擇" value={g.loc || ''} onChange={e=>{
-                           const newList = [...currentList]; newList[idx] = {...newList[idx], loc: formatPunctuation(e.target.value)}; update(currentPath, newList);
+                           const newList = [...currentList]; newList[idx] = {...newList[idx], loc: e.target.value}; update(currentPath, newList);
                         }}/>
                         <datalist id={`loc-options-${idx}`}><option value="馬可樓" /><option value="北科大" /><option value="請洽小組長" /></datalist>
                       </>
@@ -1031,6 +958,7 @@ function App() {
               </Card>
             ))}
 
+            {/* 置底：新增小組 */}
             <Btn size="lg" variant="dashed" onClick={()=>{
                 const newItem = groupTab === 'overseas' 
                   ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} 
@@ -1045,38 +973,39 @@ function App() {
 
       case 'announcements': return (
         <div>
-          {(data.announcements || []).map((a, idx)=>(
-            <Card key={a.id || idx}>
+          {data.announcements.map((a, idx)=>(
+            <Card key={a.id}>
               <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px'}}>
                 <div style={{display:'flex', alignItems:'center'}}>
                   <span style={{fontSize:'13px', color:'var(--text-muted)', marginRight:'16px'}}>順序 # {idx+1}</span>
-                  <SortControls isFirst={idx===0} isLast={idx===(data.announcements || []).length-1} onMoveUp={()=>moveItem('announcements', idx, idx-1)} onMoveDown={()=>moveItem('announcements', idx, idx+1)} />
+                  <SortControls isFirst={idx===0} isLast={idx===data.announcements.length-1} onMoveUp={()=>moveItem('announcements', idx, idx-1)} onMoveDown={()=>moveItem('announcements', idx, idx+1)} />
                 </div>
                 <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
-                  const n = (data.announcements || []).filter((_,i)=>i!==idx); update('announcements', n);
+                  const n = data.announcements.filter((_,i)=>i!==idx); update('announcements', n);
                 }}><span className="material-symbols-outlined">delete</span></button>
               </div>
               <div className="form-grid-announce">
-                <Field label="日期標籤"><input value={a.date || ''} onChange={e=>{
-                  const n = [...(data.announcements || [])]; n[idx].date = formatPunctuation(e.target.value); update('announcements', n);
+                <Field label="日期標籤"><input value={a.date} onChange={e=>{
+                  const n = [...data.announcements]; n[idx].date = e.target.value; update('announcements', n);
                 }}/></Field>
-                <Field label="標題"><input value={a.title || ''} onChange={e=>{
-                  const n = [...(data.announcements || [])]; n[idx].title = formatPunctuation(e.target.value); update('announcements', n);
+                <Field label="標題"><input value={a.title} onChange={e=>{
+                  const n = [...data.announcements]; n[idx].title = e.target.value; update('announcements', n);
                 }}/></Field>
               </div>
               <Field label="詳細內容 (支援換行做為列點)">
                 <div style={{position:'relative'}}>
-                  <textarea value={a.detail || ''} onChange={e=>{
-                     const n = [...(data.announcements || [])]; n[idx].detail = formatPunctuation(e.target.value); update('announcements', n);
+                  <textarea value={a.detail} onChange={e=>{
+                     const n = [...data.announcements]; n[idx].detail = e.target.value; update('announcements', n);
                   }} style={{paddingBottom:'24px'}}/>
-                  <span className={`word-count ${(a.detail || '').length > 100 ? 'warning' : ''}`}>{(a.detail || '').length} / 100 字</span>
+                  <span className={`word-count ${a.detail.length > 100 ? 'warning' : ''}`}>{a.detail.length} / 100 字</span>
                 </div>
               </Field>
             </Card>
           ))}
           
+          {/* 置底：新增公告 */}
           <Btn size="lg" variant="dashed" onClick={()=>{
-              const n = [...(data.announcements || []), {id: Date.now(), title:'', date:'', detail:''}]; update('announcements', n);
+              const n = [...data.announcements, {id: Date.now(), title:'', date:'', detail:''}]; update('announcements', n);
             }} style={{ width: '100%', borderRadius: '12px' }}>
             <span className="material-symbols-outlined">add_circle</span> 新增公告
           </Btn>
@@ -1086,44 +1015,65 @@ function App() {
       case 'theme': return (
         <Card>
           <SectionTitle>信息主題</SectionTitle>
-          <Field label="標題"><input value={(data.theme && data.theme.title) || ''} onChange={e=>update('theme.title', e.target.value)}/></Field>
+          <Field label="標題"><input value={data.theme.title} onChange={e=>update('theme.title', e.target.value)}/></Field>
           <div className="form-grid-2">
-            <Field label="講員"><input value={(data.theme && data.theme.speaker) || ''} onChange={e=>update('theme.speaker', e.target.value)}/></Field>
-            <Field label="司會"><input value={(data.theme && data.theme.moderator) || ''} onChange={e=>update('theme.moderator', e.target.value)}/></Field>
+            <Field label="講員"><input value={data.theme.speaker} onChange={e=>update('theme.speaker', e.target.value)}/></Field>
+            <Field label="司會"><input value={data.theme.moderator} onChange={e=>update('theme.moderator', e.target.value)}/></Field>
           </div>
-          <Field label="本週經文"><textarea value={(data.theme && data.theme.scripture) || ''} onChange={e=>update('theme.scripture', e.target.value)}/></Field>
+          <Field label="本週經文"><textarea value={data.theme.scripture} onChange={e=>update('theme.scripture', e.target.value)}/></Field>
         </Card>
       );
 
       case 'contact': return (
         <div>
           <Card><SectionTitle>奉獻資訊</SectionTitle>
-            <Field label="戶名"><input value={(data.offering && data.offering.name) || ''} onChange={e=>update('offering.name', e.target.value)}/></Field>
-            <Field label="銀行"><input value={(data.offering && data.offering.bank) || ''} onChange={e=>update('offering.bank', e.target.value)}/></Field>
-            <Field label="帳號"><input value={(data.offering && data.offering.account) || ''} onChange={e=>update('offering.account', e.target.value)}/></Field>
+            <Field label="戶名"><input value={data.offering.name} onChange={e=>update('offering.name', e.target.value)}/></Field>
+            <Field label="銀行"><input value={data.offering.bank} onChange={e=>update('offering.bank', e.target.value)}/></Field>
+            <Field label="帳號"><input value={data.offering.account} onChange={e=>update('offering.account', e.target.value)}/></Field>
           </Card>
           <Card><SectionTitle>辦公室</SectionTitle>
-            <Field label="電話"><input value={(data.office && data.office.phone) || ''} onChange={e=>update('office.phone', e.target.value)}/></Field>
-            <Field label="地址"><input value={(data.office && data.office.address) || ''} onChange={e=>update('office.address', e.target.value)}/></Field>
+            <Field label="電話"><input value={data.office.phone} onChange={e=>update('office.phone', e.target.value)}/></Field>
+            <Field label="地址"><input value={data.office.address} onChange={e=>update('office.address', e.target.value)}/></Field>
           </Card>
         </div>
       );
       
       case 'preview': return (
-        <div className="no-print" style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：</span>
-          <Btn size="sm" variant="default" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>正面 (PNG)</Btn>
-          <Btn size="sm" variant="default" onClick={() => exportToPDF('page1')} disabled={isExporting}>正面 (PDF)</Btn>
-          <span style={{width: '1px', height: '24px', background: 'var(--border-main)', margin: '0 4px'}}></span>
-          <Btn size="sm" variant="default" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>背面 (PNG)</Btn>
-          <Btn size="sm" variant="default" onClick={() => exportToPDF('page2')} disabled={isExporting}>背面 (PDF)</Btn>
-          <span style={{flex: 1, minWidth:'10px'}}></span>
-          <Btn variant="primary" onClick={publishPDFToCloud} disabled={isExporting}>
-            {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
-          </Btn>
-          <Btn variant={isOverflowing ? 'danger' : 'default'} onClick={() => exportToPDF('all')} disabled={isExporting}>
-            🖨️ 下載雙面 PDF
-          </Btn>
+        <div>
+           <div className="no-print" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-main)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)', fontSize: '14px', fontWeight: 'bold', margin:0 }}>
+                  <input type="checkbox" checked={data.layout?.longOutline || false} onChange={e => update('layout.longOutline', e.target.checked)} style={{ width: '20px', height: '20px', margin: 0, cursor: 'pointer', accentColor: 'var(--primary)' }} />
+                  啟用「長篇大綱模式」(將流程移至右下角與詩歌並排)
+              </label>
+           </div>
+
+           <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', alignItems: 'center', background: isOverflowing ? 'rgba(242,139,130,0.1)' : 'rgba(129,201,149,0.1)', padding: '16px', borderRadius: '12px', border: `1px solid ${isOverflowing ? 'var(--danger)' : 'var(--success)'}` }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+               {isOverflowing ? (
+                 <span style={{ color: 'var(--danger)', fontSize:'14px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'8px' }}><span className="material-symbols-outlined">warning</span>🚨 文字過多已超出卡片！請刪減字數或啟用長篇大綱。</span>
+               ) : (
+                 <span style={{ color: 'var(--success)', fontSize:'14px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'8px' }}><span className="material-symbols-outlined">check_circle</span>✅ 版面狀態良好，資訊已完整呈現。</span>
+               )}
+             </div>
+           </div>
+           
+           <div className="no-print" style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+             <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：</span>
+             <Btn size="sm" variant="default" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
+             <Btn size="sm" variant="default" onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
+             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', margin: '0 4px'}}></span>
+             <Btn size="sm" variant="default" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
+             <Btn size="sm" variant="default" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
+             <span style={{flex: 1, minWidth:'10px'}}></span>
+             <Btn variant="primary" onClick={publishPDFToCloud} disabled={isExporting}>
+               {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
+             </Btn>
+             <Btn variant={isOverflowing ? 'danger' : 'default'} onClick={() => exportToPDF('all')} disabled={isExporting}>
+               🖨️ 下載雙面 PDF
+             </Btn>
+           </div>
+           
+           <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />
         </div>
       );
 
@@ -1161,20 +1111,11 @@ function App() {
           <Btn variant="elevated" onClick={() => setActiveSection('preview')}>
               <span className="material-symbols-outlined">visibility</span> 預覽與列印
           </Btn>
-          {/* 視角引導：儲存按鈕採用亮綠色，發佈按鈕則採用品牌色(定義在 preview section 內) */}
-          <Btn variant="success" onClick={save} disabled={isSaving || !isConnected}>
+          <Btn variant="primary" onClick={save} disabled={isSaving || !isConnected}>
               <span className="material-symbols-outlined">cloud_upload</span> {isSaving ? '處理中...' : '儲存更新'}
           </Btn>
         </div>
       </div>
-
-      {/* 動態提醒：即時溢出偵測提示條 */}
-      {activeSection !== 'preview' && (
-        <div className="no-print" style={{ position: 'sticky', top: '65px', zIndex: 90, background: isOverflowing ? '#FCE8E6' : '#E6F4EA', color: isOverflowing ? '#C5221F' : '#137333', padding: '10px 24px', fontSize: '13px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-main)' }}>
-            <span style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span className="material-symbols-outlined" style={{fontSize: '18px'}}>{isOverflowing ? 'warning' : 'check_circle'}</span> {isOverflowing ? '文字過多已超出 A4 卡片！請刪減字數或啟用長篇大綱。' : '目前 A4 版面空間充足。'}</span>
-            <button onClick={() => setActiveSection('preview')} style={{background:'transparent', border:'none', color:'inherit', cursor:'pointer', textDecoration:'underline', fontWeight:'bold'}}>檢視預覽</button>
-        </div>
-      )}
 
       <div className="main-layout">
         <div className="no-print sidebar-fixed hide-scrollbar">
@@ -1202,31 +1143,7 @@ function App() {
         </div>
         
         <div className="content-area">
-          <div className="no-print" style={{maxWidth:'860px', margin:'0 auto'}}>
-            {renderSection()}
-          </div>
-
-          {/* 讓預覽元件常駐在背景計算高度，實現打字時「即時偵測溢出」的功能 */}
-          <div style={{ display: activeSection === 'preview' ? 'block' : 'none', marginTop: activeSection === 'preview' ? '0' : '0' }}>
-            {activeSection === 'preview' && (
-              <div className="no-print" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-main)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
-                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)', fontSize: '14px', fontWeight: 'bold', margin:0 }}>
-                     <input type="checkbox" checked={data.layout && data.layout.longOutline} onChange={e => update('layout.longOutline', e.target.checked)} style={{ width: '20px', height: '20px', margin: 0, cursor: 'pointer', accentColor: 'var(--primary)' }} />
-                     啟用「長篇大綱模式」(將流程移至右下角與詩歌並排)
-                 </label>
-              </div>
-            )}
-          </div>
-          
-          <div style={{ 
-              position: activeSection === 'preview' ? 'relative' : 'absolute', 
-              visibility: activeSection === 'preview' ? 'visible' : 'hidden', 
-              top: activeSection === 'preview' ? 'auto' : '-9999px',
-              left: activeSection === 'preview' ? 'auto' : '-9999px',
-              zIndex: activeSection === 'preview' ? 1 : -100
-          }}>
-             {data && <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />}
-          </div>
+          <div style={{maxWidth:'860px', margin:'0 auto'}}>{renderSection()}</div>
         </div>
       </div>
       
