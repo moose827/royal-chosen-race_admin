@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>風一族週報後台管理系統 v4.0</title>
+<title>風一族週報後台管理系統 v4.1</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script>
@@ -258,13 +258,11 @@ const DEFAULT_DATA = {
 const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false, style={}}) => {
   const base = "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 border whitespace-nowrap rounded-full";
   const variants = {
-    // 高對比主要按鈕 (儲存)
     primary: "bg-[var(--primary)] border-[var(--primary)] text-[var(--on-primary)] shadow-sm hover:bg-[var(--primary-hover)]",
-    // 高對比次要按鈕 (預覽/白色)
+    success: "bg-[var(--success)] border-[var(--success)] text-[#121212] shadow-sm hover:brightness-110",
+    brand: "bg-[var(--brand-blue)] border-[var(--brand-blue)] text-white shadow-sm hover:brightness-110",
     elevated: "bg-[var(--secondary)] border-transparent text-[var(--on-secondary)] shadow-sm hover:brightness-90",
-    // 虛線按鈕 (新增類)
     dashed: "bg-[rgba(138,180,248,0.05)] border border-dashed border-[var(--border-hover)] text-[var(--primary)] hover:bg-[rgba(138,180,248,0.15)] hover:border-[var(--primary)]",
-    // 一般框線按鈕
     default: "bg-transparent border-[var(--border-main)] text-[var(--primary)] hover:bg-[var(--bg-input)] hover:border-[var(--border-hover)]",
     danger: "bg-transparent border-[var(--danger)] text-[var(--danger)] hover:bg-[rgba(242,139,130,0.1)]",
     ghost: "bg-transparent border-transparent text-[var(--text-main)] hover:bg-[var(--bg-input)]"
@@ -288,7 +286,7 @@ const SectionTitle = ({children}) => <h3 style={{fontSize:'16px',fontWeight:'700
 const Field = ({label, children}) => <div style={{marginBottom:'16px'}}><label>{label}</label>{children}</div>;
 
 // ================= 預覽 A4 介面 =================
-const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
+const BulletinPreview = ({ data, outlineRef, announcementsRef, isHidden = false }) => {
   const parts = data.bulletinDate.split('-');
   const year = parts[0] || '2026';
   const mmdd = parts.length === 3 ? `${parts[1]}/${parts[2]}` : '12/26';
@@ -299,10 +297,10 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   const outOfTownGroups = data.groups.special.filter(g => g.category === '外縣市');
 
   return (
-    <div className="a4-preview-wrapper hide-scrollbar">
+    <div className={`a4-preview-wrapper hide-scrollbar ${isHidden ? 'no-print' : ''}`} style={isHidden ? {position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none', zIndex: -100} : {}}>
       <div className="a4-container">
         {/* 第一頁 (正面) */}
-        <div className="a4-page" id="page-1">
+        <div className="a4-page" id={isHidden ? "hidden-page-1" : "page-1"}>
           <div className="pdf-header">
             <div className="pdf-logo-area">
               <img src="./2022logo (1).png" alt="logo" style={{width:'50px', height:'50px', objectFit:'contain'}} />
@@ -438,7 +436,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
         </div>
 
         {/* 第二頁 (背面) */}
-        <div className="a4-page" id="page-2" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="a4-page" id={isHidden ? "hidden-page-2" : "page-2"} style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
             <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🔠 教會小組</div>
           </div>
@@ -553,8 +551,8 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const outlineRef = useRef(null);
-  const announcementsRef = useRef(null);
+  const hiddenOutlineRef = useRef(null);
+  const hiddenAnnouncementsRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
@@ -591,18 +589,19 @@ function App() {
     return () => bulletinRef.off();
   }, [user]);
 
-  // 溢出偵測
+  // 全局溢出偵測 (利用隱藏渲染區即時計算)
   useEffect(() => {
-    if (activeSection !== 'preview' || !data) return;
+    if (!data) return;
     const checkOverflow = () => {
       let overflow = false;
-      if (outlineRef.current && outlineRef.current.scrollHeight > Math.ceil(outlineRef.current.clientHeight) + 2) overflow = true;
-      if (announcementsRef.current && announcementsRef.current.scrollHeight > Math.ceil(announcementsRef.current.clientHeight) + 2) overflow = true;
+      if (hiddenOutlineRef.current && hiddenOutlineRef.current.scrollHeight > Math.ceil(hiddenOutlineRef.current.clientHeight) + 2) overflow = true;
+      if (hiddenAnnouncementsRef.current && hiddenAnnouncementsRef.current.scrollHeight > Math.ceil(hiddenAnnouncementsRef.current.clientHeight) + 2) overflow = true;
       setIsOverflowing(overflow);
     };
     checkOverflow();
-    setTimeout(checkOverflow, 300);
-  }, [data, activeSection]);
+    const timer = setTimeout(checkOverflow, 300);
+    return () => clearTimeout(timer);
+  }, [data]);
 
   if (isAuthLoading) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>載入中...</div>;
 
@@ -615,7 +614,7 @@ function App() {
             <div style={{width:'48px', height:'48px', background:'var(--primary)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)', margin:'0 auto 16px'}}>
               <span className="material-symbols-outlined" style={{fontSize:'28px'}}>church</span>
             </div>
-            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.0</h2>
+            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.1</h2>
           </div>
           <form onSubmit={handleLogin}>
             <Field label="帳號 (Email)"><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></Field>
@@ -661,15 +660,18 @@ function App() {
     showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
   };
 
+  const getFormattedDate = () => data.bulletinDate.replace(/-/g, '');
+
   // ================= 匯出與雲端發佈功能 =================
   const exportToImage = async (pageId, format) => {
     setIsExporting(true);
     showToast('影像產出中，請稍候...');
     try {
       const el = document.getElementById(pageId);
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+      // 將 scale 提升至 3
+      const canvas = await html2canvas(el, { scale: 3, useCORS: true });
       const link = document.createElement('a');
-      link.download = `風一族週報_${pageId}.${format}`;
+      link.download = `${getFormattedDate()}_風一族週報_${pageId}.${format}`;
       link.href = canvas.toDataURL(`image/${format}`);
       link.click();
     } catch (err) {
@@ -687,18 +689,21 @@ function App() {
       const p1 = document.getElementById('page-1');
       const p2 = document.getElementById('page-2');
 
+      // 將 scale 提升至 3
       if (mode === 'page1' || mode === 'all') {
-        const canvas1 = await html2canvas(p1, { scale: 2, useCORS: true });
+        const canvas1 = await html2canvas(p1, { scale: 3, useCORS: true });
         pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       }
 
       if (mode === 'all') pdf.addPage();
 
       if (mode === 'page2' || mode === 'all') {
-        const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
+        const canvas2 = await html2canvas(p2, { scale: 3, useCORS: true });
         pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       }
-      pdf.save(mode === 'all' ? '風一族週報_完整版.pdf' : `風一族週報_${mode}.pdf`);
+      
+      const fileName = mode === 'all' ? `${getFormattedDate()}_風一族週報_完整版.pdf` : `${getFormattedDate()}_風一族週報_${mode}.pdf`;
+      pdf.save(fileName);
     } catch (err) {
       showToast('❌ 匯出 PDF 失敗：' + err.message);
     }
@@ -714,8 +719,9 @@ function App() {
       
       const p1 = document.getElementById('page-1');
       const p2 = document.getElementById('page-2');
-      const canvas1 = await html2canvas(p1, { scale: 2, useCORS: true });
-      const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
+      // 將 scale 提升至 3
+      const canvas1 = await html2canvas(p1, { scale: 3, useCORS: true });
+      const canvas2 = await html2canvas(p2, { scale: 3, useCORS: true });
       
       pdf.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       pdf.addPage();
@@ -723,7 +729,7 @@ function App() {
       
       const pdfBlob = pdf.output('blob');
       const storageRef = storage.ref();
-      const fileName = `bulletins/風一族週報_${data.bulletinDate}.pdf`;
+      const fileName = `bulletins/${getFormattedDate()}_風一族週報.pdf`;
       const fileRef = storageRef.child(fileName);
       
       await fileRef.put(pdfBlob);
@@ -853,11 +859,17 @@ function App() {
           {data.schedule.map((item, idx)=>(
             <div key={idx} className="list-item-row schedule-grid">
               <div className="idx" style={{color:'var(--text-muted)', fontWeight:'bold', textAlign:'center'}}>{idx+1}</div>
-              <input className="start" type="time" value={item.start} onChange={e=>{
+              <input className="start" id={`schedule-start-${idx}`} type="time" value={item.start} onChange={e=>{
                 const n = [...data.schedule]; n[idx].start = e.target.value; update('schedule', n);
               }}/>
               <input className="end" type="time" value={item.end} onChange={e=>{
-                const n = [...data.schedule]; n[idx].end = e.target.value; update('schedule', n);
+                const val = e.target.value;
+                const n = [...data.schedule]; n[idx].end = val; update('schedule', n);
+                // 輸入滿5個字元 (例如 09:50) 自動跳轉下一個 start
+                if (val.length === 5) {
+                  const nextInput = document.getElementById(`schedule-start-${idx+1}`);
+                  if (nextInput) nextInput.focus();
+                }
               }}/>
               <input className="task" value={item.task} placeholder="流程項目" onChange={e=>{
                 const n = [...data.schedule]; n[idx].task = e.target.value; update('schedule', n);
@@ -1065,7 +1077,7 @@ function App() {
              <Btn size="sm" variant="default" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
              <Btn size="sm" variant="default" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
              <span style={{flex: 1, minWidth:'10px'}}></span>
-             <Btn variant="primary" onClick={publishPDFToCloud} disabled={isExporting}>
+             <Btn variant="brand" onClick={publishPDFToCloud} disabled={isExporting}>
                {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
              </Btn>
              <Btn variant={isOverflowing ? 'danger' : 'default'} onClick={() => exportToPDF('all')} disabled={isExporting}>
@@ -1073,7 +1085,7 @@ function App() {
              </Btn>
            </div>
            
-           <BulletinPreview data={data} outlineRef={outlineRef} announcementsRef={announcementsRef} />
+           <BulletinPreview data={data} outlineRef={null} announcementsRef={null} isHidden={false} />
         </div>
       );
 
@@ -1094,6 +1106,9 @@ function App() {
 
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
+      {/* 隱藏式預覽渲染區：不論在哪個分頁，都在背景維持計算即時溢出狀況 */}
+      {data && <BulletinPreview data={data} outlineRef={hiddenOutlineRef} announcementsRef={hiddenAnnouncementsRef} isHidden={true} />}
+
       <div className="no-print admin-header">
         <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
           <div style={{width:'36px', height:'36px', background:'var(--primary)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)'}}>
@@ -1105,13 +1120,18 @@ function App() {
                 {isConnected ? <><span className="material-symbols-outlined" style={{fontSize:'14px'}}>cloud_done</span>已連線雲端</> : '○ 載入中...'}
             </div>
           </div>
+          {/* 全局溢出狀態即時指示燈 */}
+          <div style={{fontSize:'12px', color: isOverflowing ? 'var(--danger)' : 'var(--success)', display:'flex', alignItems:'center', gap:'4px', marginLeft:'12px', paddingLeft:'12px', borderLeft:'1px solid var(--border-main)'}}>
+            <span className="material-symbols-outlined" style={{fontSize:'14px'}}>{isOverflowing ? 'warning' : 'check_circle'}</span>
+            {isOverflowing ? '版面已溢出，需調整文字' : '版面空間正常'}
+          </div>
         </div>
         
         <div className="admin-header-right">
           <Btn variant="elevated" onClick={() => setActiveSection('preview')}>
               <span className="material-symbols-outlined">visibility</span> 預覽與列印
           </Btn>
-          <Btn variant="primary" onClick={save} disabled={isSaving || !isConnected}>
+          <Btn variant="success" onClick={save} disabled={isSaving || !isConnected}>
               <span className="material-symbols-outlined">cloud_upload</span> {isSaving ? '處理中...' : '儲存更新'}
           </Btn>
         </div>
