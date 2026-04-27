@@ -114,7 +114,7 @@
   /* 表單排版 */
   .form-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .form-grid-announce { display: grid; grid-template-columns: 120px 1fr; gap: 12px; }
-  .schedule-grid { display: grid; grid-template-columns: 30px minmax(0, 100px) minmax(0, 100px) 1fr auto; gap: 12px; align-items: center; }
+  .schedule-grid { display: grid; grid-template-columns: 30px 130px 130px 1fr auto; gap: 12px; align-items: center; }
 
   /* 登入畫面 */
   .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg-main); padding: 20px;}
@@ -130,8 +130,8 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.3); border-radius: 4px;
     
     /* 加入這兩行：強制關閉手機端字體自動放大，確保雙端渲染一致 */
-    -webkit-text-size-adjust: none;
-    text-size-adjust: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   @media print {
@@ -174,6 +174,22 @@
   
   .btn-ghost { background: transparent; color: var(--text-main); }
   .btn-ghost:hover:not(:disabled) { background: var(--bg-input); }
+  
+  /* 下載與發佈操作列 */
+  .action-bar-wrapper {
+    background: var(--bg-card); padding: 16px 20px; border-radius: 16px; 
+    border: 1px solid var(--border-main); margin-bottom: 24px; 
+    display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  }
+  .action-bar-downloads { display: flex; gap: 10px; align-items: center; overflow-x: auto; flex-wrap: nowrap; flex: 1; }
+  .action-bar-primary { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  
+  @media (max-width: 768px) {
+    .action-bar-wrapper { flex-direction: column; align-items: stretch; padding: 16px; }
+    .action-bar-downloads { padding-bottom: 12px; border-bottom: 1px dashed var(--border-main); margin-bottom: 4px; }
+    .action-bar-primary { flex-direction: column; width: 100%; }
+    .action-bar-primary button { width: 100%; justify-content: center; }
+  }
   
   /* ================= 手機版優化 ================= */
   @media (max-width: 768px) {
@@ -341,7 +357,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef, isHidden = false 
   return (
     <div 
       className={`a4-preview-wrapper hide-scrollbar ${isHidden ? 'no-print' : ''}`} 
-      style={isHidden ? { position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none', zIndex: -100, width: '210mm' } : {}}
+      style={isHidden ? { position: 'fixed', top: 0, left: 0, width: '210mm', minWidth: '210mm', height: '297mm', visibility: 'hidden', pointerEvents: 'none', zIndex: -9999, transform: 'scale(1)', transformOrigin: 'top left' } : {}}
     >
       <div className="a4-container">
         {/* 第一頁 (正面) */}
@@ -1120,30 +1136,26 @@ function App() {
              </div>
            </div>
            
-           <div className="no-print hide-scrollbar" style={{ background: 'var(--bg-card)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'nowrap', gap: '10px', alignItems: 'center', overflowX: 'auto' }}>
-             <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px', flexShrink: 0}}>
-               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：
-             </span>
-             
-             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
-             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
-             
-             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
-             
-             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
-             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
-             
-             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
-             
-             <Btn size="sm" variant={isOverflowing ? 'danger' : 'default'} style={{flexShrink: 0}} onClick={() => exportToPDF('all')} disabled={isExporting}>
-               🖨️ 雙面 PDF
-             </Btn>
+           <div className="no-print action-bar-wrapper">
+             <div className="action-bar-downloads hide-scrollbar">
+               <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px', flexShrink: 0}}>
+                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：
+               </span>
+               <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
+               <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
+               <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
+               <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
+               <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
+             </div>
 
-             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
-
-             <Btn size="sm" variant="brand" style={{flexShrink: 0}} onClick={publishPDFToCloud} disabled={isExporting}>
-               {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
-             </Btn>
+             <div className="action-bar-primary">
+               <Btn size="sm" variant={isOverflowing ? 'danger' : 'default'} style={{flexShrink: 0}} onClick={() => exportToPDF('all')} disabled={isExporting}>
+                 🖨️ 雙面 PDF
+               </Btn>
+               <Btn size="sm" variant="brand" style={{flexShrink: 0}} onClick={publishPDFToCloud} disabled={isExporting}>
+                 {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
+               </Btn>
+             </div>
            </div>
            
            <BulletinPreview data={data} outlineRef={null} announcementsRef={null} isHidden={false} />
