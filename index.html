@@ -128,6 +128,10 @@
     padding: 8mm 10mm; box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif;
     position: relative; display: flex; flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3); border-radius: 4px;
+    
+    /* 加入這兩行：強制關閉手機端字體自動放大，確保雙端渲染一致 */
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
   
   @media print {
@@ -335,7 +339,10 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef, isHidden = false 
   const outOfTownGroups = data.groups.special.filter(g => g.category === '外縣市');
 
   return (
-    <div className={`a4-preview-wrapper hide-scrollbar ${isHidden ? 'no-print' : ''}`} style={isHidden ? {position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none', zIndex: -100} : {}}>
+    <div 
+      className={`a4-preview-wrapper hide-scrollbar ${isHidden ? 'no-print' : ''}`} 
+      style={isHidden ? { position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none', zIndex: -100, width: '210mm' } : {}}
+    >
       <div className="a4-container">
         {/* 第一頁 (正面) */}
         <div className="a4-page" id={isHidden ? "hidden-page-1" : "page-1"}>
