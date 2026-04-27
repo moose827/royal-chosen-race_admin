@@ -141,7 +141,36 @@
     .a4-container { gap: 0; display: block; width: 100%; }
     .a4-page { box-shadow: none; border-radius: 0; page-break-after: always; height: 297mm; }
   }
-
+/* ===== 按鈕系統 ===== */
+  .btn-base { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; transition: all 0.2s; border: 1px solid transparent; white-space: nowrap; border-radius: 999px; cursor: pointer; }
+  .btn-sm { padding: 6px 16px; font-size: 12px; }
+  .btn-md { padding: 10px 24px; font-size: 14px; }
+  .btn-lg { padding: 14px 32px; font-size: 16px; }
+  
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  
+  .btn-success { background: var(--success); border-color: var(--success); color: #121212; }
+  .btn-success:hover:not(:disabled) { filter: brightness(1.1); }
+  
+  .btn-brand { background: var(--brand-blue); border-color: var(--brand-blue); color: white; }
+  .btn-brand:hover:not(:disabled) { filter: brightness(1.2); }
+  
+  .btn-elevated { background: var(--secondary); color: var(--on-secondary); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .btn-elevated:hover:not(:disabled) { filter: brightness(0.9); }
+  
+  .btn-dashed { background: rgba(138,180,248,0.05); border: 1px dashed var(--border-hover); color: var(--primary); }
+  .btn-dashed:hover:not(:disabled) { background: rgba(138,180,248,0.15); border-color: var(--primary); }
+  
+  .btn-default { background: transparent; border-color: var(--border-main); color: var(--primary); }
+  .btn-default:hover:not(:disabled) { background: var(--bg-input); border-color: var(--border-hover); }
+  
+  .btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover:not(:disabled) { background: rgba(242,139,130,0.1); }
+  
+  .btn-ghost { background: transparent; color: var(--text-main); }
+  .btn-ghost:hover:not(:disabled) { background: var(--bg-input); }
+  
   /* ================= 手機版優化 ================= */
   @media (max-width: 768px) {
     input, textarea, select { font-size: 16px; }
@@ -256,7 +285,16 @@ const DEFAULT_DATA = {
 
 // ================= UI 元件 =================
 const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false, style={}}) => {
-  const base = "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 border whitespace-nowrap rounded-full";
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={disabled} 
+      style={{...style, opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? 'none' : 'auto'}} 
+      className={`btn-base btn-${size} btn-${variant} ${className}`}
+    >
+      {children}
+    </button>
+  );
   const variants = {
     primary: "bg-[var(--primary)] border-[var(--primary)] text-[var(--on-primary)] shadow-sm hover:bg-[var(--primary-hover)]",
     success: "bg-[var(--success)] border-[var(--success)] text-[#121212] shadow-sm hover:brightness-110",
@@ -438,7 +476,7 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef, isHidden = false 
         {/* 第二頁 (背面) */}
         <div className="a4-page" id={isHidden ? "hidden-page-2" : "page-2"} style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-            <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🧑‍🧒‍🧒 教會小組</div>
+            <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🔠 教會小組</div>
           </div>
 
           <div className="pdf-page-2-grid">
@@ -882,12 +920,18 @@ function App() {
               </div>
             </div>
           ))}
-          {/* 置底：新增流程 */}
-          <Btn size="lg" variant="dashed" onClick={()=>{
-            const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
-          }} style={{ width: '100%', borderRadius: '12px', marginTop:'12px' }}>
-            <span className="material-symbols-outlined">add_circle</span> 新增流程
-          </Btn>
+          {/* 置底：新增流程 (最多 5 列) */}
+          {data.schedule.length < 5 ? (
+            <Btn size="lg" variant="dashed" onClick={()=>{
+              const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
+            }} style={{ width: '100%', borderRadius: '12px', marginTop:'12px' }}>
+              <span className="material-symbols-outlined">add_circle</span> 新增流程
+            </Btn>
+          ) : (
+            <div style={{ textAlign: 'center', color: 'var(--danger)', fontSize: '13px', marginTop: '16px', padding: '12px', background: 'rgba(242,139,130,0.1)', borderRadius: '12px', border: '1px dashed var(--danger)' }}>
+              🔒 聚會流程已達上限 (最多 5 列)，以確保版面正常顯示。
+            </div>
+          )}
         </Card>
       );
 
@@ -1069,19 +1113,29 @@ function App() {
              </div>
            </div>
            
-           <div className="no-print" style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-             <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：</span>
-             <Btn size="sm" variant="default" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
-             <Btn size="sm" variant="default" onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
-             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', margin: '0 4px'}}></span>
-             <Btn size="sm" variant="default" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
-             <Btn size="sm" variant="default" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
-             <span style={{flex: 1, minWidth:'10px'}}></span>
-             <Btn variant="brand" onClick={publishPDFToCloud} disabled={isExporting}>
-               {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
+           <div className="no-print hide-scrollbar" style={{ background: 'var(--bg-card)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'nowrap', gap: '10px', alignItems: 'center', overflowX: 'auto' }}>
+             <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px', flexShrink: 0}}>
+               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：
+             </span>
+             
+             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
+             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
+             
+             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
+             
+             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
+             <Btn size="sm" variant="default" style={{flexShrink: 0}} onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
+             
+             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
+             
+             <Btn size="sm" variant={isOverflowing ? 'danger' : 'default'} style={{flexShrink: 0}} onClick={() => exportToPDF('all')} disabled={isExporting}>
+               🖨️ 雙面 PDF
              </Btn>
-             <Btn variant={isOverflowing ? 'danger' : 'default'} onClick={() => exportToPDF('all')} disabled={isExporting}>
-               🖨️ 下載雙面 PDF
+
+             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', flexShrink: 0}}></span>
+
+             <Btn size="sm" variant="brand" style={{flexShrink: 0}} onClick={publishPDFToCloud} disabled={isExporting}>
+               {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
              </Btn>
            </div>
            
@@ -1115,7 +1169,7 @@ function App() {
             <span className="material-symbols-outlined">church</span>
           </div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700', color:'var(--text-main)'}}>週報後台 v4.1</div>
+            <div style={{fontSize:'16px', fontWeight:'700', color:'var(--text-main)'}}>週報後台 v4.0</div>
             <div style={{fontSize:'12px', color: isConnected ? 'var(--success)' : 'var(--text-muted)', display:'flex', alignItems:'center', gap:'4px'}}>
                 {isConnected ? <><span className="material-symbols-outlined" style={{fontSize:'14px'}}>cloud_done</span>已連線雲端</> : '○ 載入中...'}
             </div>
