@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>風一族週報後台管理系統 v3.0 (雲端同步版)</title>
+<title>風一族週報後台管理系統 v4.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-storage-compat.js"></script>
 
@@ -17,78 +17,117 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  :root {
+    /* 全新 Google 企業高對比色彩系統 */
+    --bg-main: #121212;         /* 畫面底色 */
+    --bg-card: #1E1E1E;         /* 卡片底色 */
+    --bg-input: #2C2C2C;        /* 輸入框底色 */
+    --border-main: #3A3A3A;     /* 邊框色 */
+    --border-hover: #555555;    /* 邊框 Hover */
+    
+    --primary: #8AB4F8;         /* Google 亮藍 */
+    --on-primary: #174EA6;      /* 藍色按鈕上的字 */
+    --primary-hover: #AECBFA;
+    
+    --secondary: #E8EAED;       /* 次要按鈕底色 */
+    --on-secondary: #202124;    /* 次要按鈕上的字 */
+    
+    --danger: #F28B82;          /* 紅色 */
+    --success: #81C995;         /* 綠色 */
+    
+    --text-main: #E8EAED;       /* 主要白字 */
+    --text-muted: #9AA0A6;      /* 次要灰字 */
+    
+    /* A4 預覽色彩 */
+    --brand-blue: #003B91; 
+    --card-bg: #f5f8fc; 
+    --border-color: #dce4ec;
+  }
+
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Noto Sans TC',sans-serif;background:#0f0f0f;color:#e8e8e8;min-height:100vh}
-  ::-webkit-scrollbar{width:6px;height:6px}
-  ::-webkit-scrollbar-track{background:#1a1a1a}
-  ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+  body{font-family:'Noto Sans TC',sans-serif;background:var(--bg-main);color:var(--text-main);min-height:100vh}
   
-  /* 隱藏捲軸但可滑動 (給手機版側邊欄用) */
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border-main);border-radius:4px}
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  input,textarea,select{
-    width:100%;padding:10px 12px;background:#1e1e1e;border:1px solid #2e2e2e;
-    border-radius:6px;color:#e8e8e8;font-size:14px;outline:none;transition:border-color .2s;
+  /* 輸入框基礎調整 */
+  input, textarea, select, button {
+    -webkit-appearance: none; appearance: none; font-family: inherit;
   }
-  input:focus,textarea:focus,select:focus{border-color:#4ade80}
-  textarea{resize:vertical;min-height:60px;line-height:1.6}
-  button{cursor:pointer;font-family:'Noto Sans TC',sans-serif}
-  label{font-size:12px;color:#888;font-weight:500;letter-spacing:.05em;display:block;margin-bottom:5px}
-  
-  .sort-controls { display: flex; gap: 4px; margin-left: 8px; }
-  .sort-btn { background: #262626; border: 1px solid #333; color: #888; padding: 4px 8px; border-radius: 4px; font-size: 10px; transition: all 0.2s; }
-  .sort-btn:hover { background: #333; color: #4ade80; border-color: #4ade80; }
-  .sort-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-  
-  .list-item-row { display: flex; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #222; }
-  .word-count { font-size: 11px; float: right; margin-top: -20px; }
-  .word-count.warning { color: #ef4444; font-weight: bold; }
+  input[type="checkbox"] { -webkit-appearance: auto; appearance: auto; }
 
-  /* ================= 響應式後台佈局結構 ================= */
-  .admin-header { background:#111; border-bottom:1px solid #1e1e1e; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
-  .admin-header-left { display:flex; align-items:center; gap:12px; }
-  .admin-header-right { display:flex; align-items:center; gap:12px; }
+  /* 高對比輸入框 */
+  input, textarea, select {
+    width: 100%; min-width: 0; padding: 12px 14px; 
+    background: var(--bg-input); border: 1px solid var(--border-main); 
+    border-radius: 8px; color: var(--text-main); font-size: 14px; 
+    outline: none; transition: all 0.2s;
+  }
+  input:hover, textarea:hover, select:hover { border-color: var(--border-hover); }
+  input:focus, textarea:focus, select:focus {
+    border: 2px solid var(--primary); padding: 11px 13px; background: #202124;
+  }
+  input[type="time"], input[type="date"] { 
+    padding: 12px 8px; letter-spacing: -0.5px; text-align: center;
+  }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  label { font-size: 13px; color: var(--text-muted); font-weight: 500; display: block; margin-bottom: 8px; }
   
+  /* 圖示按鈕 */
+  .icon-btn {
+    background: transparent; border: none; color: var(--text-muted);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; width: 40px; height: 40px; transition: all 0.2s;
+  }
+  .icon-btn:hover:not(:disabled) { background: var(--bg-input); color: var(--text-main); }
+  .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .list-item-row { 
+    display: flex; align-items: center; padding: 12px; border-radius: 12px; 
+    margin-bottom: 8px; border: 1px solid var(--border-main); 
+    background: var(--bg-card);
+  }
+  .word-count { font-size: 11px; position: absolute; bottom: 8px; right: 12px; color: var(--text-muted); }
+  .word-count.warning { color: var(--danger); font-weight: bold; }
+
+  /* ================= 佈局結構 ================= */
+  .admin-header { 
+    background: var(--bg-card); border-bottom: 1px solid var(--border-main); 
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; 
+    position: sticky; top: 0; z-index: 100;
+  }
+  .admin-header-right { display: flex; gap: 12px; align-items: center; }
   .main-layout { display: flex; flex: 1; flex-direction: row; }
-  .content-area { flex: 1; padding: 30px; overflow-y: auto; background: #0f0f0f; }
-
+  .content-area { flex: 1; padding: 32px; overflow-y: auto; background: var(--bg-main); }
   .sidebar-fixed {
-    width: 180px; 
-    background: #0d0d0d; 
-    border-right: 1px solid #1a1a1a; 
-    padding: 16px 12px;
-    position: sticky;
-    top: 61px; /* 桌機版 Header 高度 */
-    height: calc(100vh - 61px);
-    overflow-y: auto;
+    width: 240px; background: var(--bg-main); border-right: 1px solid var(--border-main); 
+    padding: 24px 12px; position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto;
   }
 
-  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* 表單排版 */
+  .form-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .form-grid-announce { display: grid; grid-template-columns: 120px 1fr; gap: 12px; }
-  .schedule-grid { display: grid; grid-template-columns: 30px 100px 100px 1fr auto; gap: 8px; align-items: center; }
-  
-  /* 預覽區防護罩：確保 A4 頁面可以在手機上水平滑動而不破版 */
-  .a4-preview-wrapper { width: 100%; overflow-x: auto; padding-bottom: 20px; }
-  .a4-container { display: flex; flex-direction: column; gap: 20px; width: max-content; margin: 0 auto; }
-  .warning-banner { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; padding: 12px 16px; border-radius: 8px; }
+  .schedule-grid { display: grid; grid-template-columns: 30px minmax(0, 100px) minmax(0, 100px) 1fr auto; gap: 12px; align-items: center; }
 
-  /* ================= A4 預覽與列印樣式 ================= */
+  /* 登入畫面 */
+  .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg-main); padding: 20px;}
+  .login-card { background: var(--bg-card); padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid var(--border-main); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+  /* 預覽區防護罩 */
+  .a4-preview-wrapper { width: 100%; overflow-x: auto; padding-bottom: 24px; -webkit-overflow-scrolling: touch; }
+  .a4-container { display: flex; flex-direction: column; gap: 24px; width: max-content; margin: 0 auto; }
   .a4-page {
-    width: 210mm;
-    height: 295mm;
-    overflow: hidden; 
-    background: white;
-    color: #333;
-    padding: 8mm 10mm; 
-    box-sizing: border-box;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    font-family: 'Noto Sans TC', sans-serif;
-    position: relative;
-    display: flex;
-    flex-direction: column;
+    width: 210mm; height: 295mm; overflow: hidden; background: white; color: #333;
+    padding: 8mm 10mm; box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif;
+    position: relative; display: flex; flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); border-radius: 4px;
   }
   
   @media print {
@@ -100,47 +139,44 @@
     #root > div > div:last-child { display: block !important; padding: 0 !important; overflow: visible !important; }
     .a4-preview-wrapper { overflow: visible !important; width: 100%; }
     .a4-container { gap: 0; display: block; width: 100%; }
-    .a4-page { box-shadow: none; page-break-after: always; page-break-inside: avoid; border: none; height: 295mm; }
+    .a4-page { box-shadow: none; border-radius: 0; page-break-after: always; height: 297mm; }
   }
 
-  /* ================= 手機版 (Mobile Responsive) ================= */
+  /* ================= 手機版優化 ================= */
   @media (max-width: 768px) {
-    /* Header 變為垂直排列 */
-    .admin-header { padding: 12px 16px; flex-direction: column; align-items: stretch; gap: 12px; }
-    .admin-header-right { justify-content: space-between; width: 100%; flex-wrap: wrap; }
-    
-    /* 主佈局變為垂直排列 */
+    input, textarea, select { font-size: 16px; }
+    .admin-header { padding: 12px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
+    .admin-header-right { width: 100%; }
+    .admin-header-right button { flex: 1; justify-content: center; padding: 10px 0; font-size: 14px; }
     .main-layout { flex-direction: column; }
-    .content-area { padding: 15px; }
-    
-    /* 側邊欄變為上方水平滑動導覽列 */
+    .content-area { padding: 16px; }
     .sidebar-fixed {
-      width: 100%; height: auto; position: sticky; top: 96px; z-index: 90;
-      border-right: none; border-bottom: 1px solid #222; padding: 10px 15px;
-      display: flex; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap;
-      background: #0a0a0a;
+      width: 100%; height: auto; position: sticky; top: 115px; z-index: 90;
+      border-right: none; border-bottom: 1px solid var(--border-main); 
+      padding: 12px 16px; display: flex; flex-direction: row; gap: 8px;
+      overflow-x: auto; white-space: nowrap; background: rgba(18, 18, 18, 0.95);
+      backdrop-filter: blur(10px);
     }
-    .sidebar-fixed button { display: inline-block; width: auto !important; margin-bottom: 0 !important; margin-right: 8px; padding: 8px 16px !important; }
-    .sidebar-fixed > div { display: none; } /* 隱藏底部的複製 JSON 按鈕 */
+    .sidebar-fixed button { display: inline-block; width: auto !important; padding: 8px 16px !important; margin-bottom: 0 !important; }
+    .sidebar-fixed > div { display: none; } 
     
-    /* 表單變為單欄 */
-    .form-grid-2 { grid-template-columns: 1fr; }
+    .form-grid-2 { grid-template-columns: 1fr !important; gap: 12px; }
     .form-grid-announce { grid-template-columns: 1fr; }
-    
-    /* 聚會流程表單重組 */
-    .schedule-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "start end" "task task" "controls controls"; gap: 10px; }
-    .schedule-grid > div:nth-child(1) { display: none; }
-    .schedule-grid > input:nth-child(2) { grid-area: start; }
-    .schedule-grid > input:nth-child(3) { grid-area: end; }
-    .schedule-grid > input:nth-child(4) { grid-area: task; }
-    .schedule-grid > div:nth-child(5) { grid-area: controls; justify-content: flex-end; }
-
-    /* 警告橫幅變垂直 */
-    .warning-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .schedule-grid { 
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); 
+      grid-template-areas: "start end" "task task" "controls controls"; gap: 10px; 
+    }
+    .schedule-grid > .idx { display: none; }
+    .schedule-grid > .start { grid-area: start; }
+    .schedule-grid > .end { grid-area: end; }
+    .schedule-grid > .task { grid-area: task; }
+    .schedule-grid > .controls { 
+      grid-area: controls; justify-content: flex-end; 
+      border-top: 1px dashed var(--border-main); padding-top: 8px; margin-top: 4px;
+    }
   }
 
-  /* --- A4 內部排版 (不隨螢幕縮小) --- */
-  :root { --brand-blue: #003B91; --card-bg: #f5f8fc; --border-color: #dce4ec; }
+  /* --- A4 內部排版維持原樣 --- */
   .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--brand-blue); padding-bottom: 12px; margin-bottom: 10px; flex-shrink: 0; }
   .pdf-logo-area { display: flex; align-items: center; gap: 10px; }
   .pdf-logo-text { color: var(--brand-blue); font-weight: 700; font-size: 26px; letter-spacing: 1px; }
@@ -197,9 +233,9 @@ const firebaseConfig = {
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 const storage = firebase.storage();
-const auth = firebase.auth(); // 初始化 Auth
 
 const DEFAULT_DATA = {
     "bulletinDate": "2026-04-26",
@@ -207,76 +243,51 @@ const DEFAULT_DATA = {
     "vision": "敬畏神，一無所懼",
     "layout": { "longOutline": false },
     "pdfDownloadUrl": "", 
-    "theme": {
-        "title": "神坐著為王： 一無所懼，一無所缺",
-        "speaker": "葉志偉 牧師",
-        "moderator": "李宜潔 傳道",
-        "scripture": "馬太福音 28/19-20，馬可福音 16/20，路加福音 24/50-53，約翰福音 21/24-25，使徒行傳 1/6-11、4/11-13、5/29"
-    },
-    "sermonOutline": [
-        {
-            "title": "一、一群加利利無知的小民",
-            "content": [
-                "1. 在耶穌復活升天後\n   • 個個充滿智慧和膽量\n   • 勇敢果斷地宣告：除祂以外別無拯救\n   • 直言順從神，不順從人是應當的"
-            ]
-        }
-    ],
-    "songs": {
-        "worship": ["獻上讚美祭", "任何環境不要懼怕"],
-        "response": ["直到主耶穌再來時候", "我神真偉大"]
-    },
-    "schedule": [
-        { "start": "09:30", "end": "09:50", "task": "敬拜讚美" },
-        { "start": "09:50", "end": "09:55", "task": "教會消息" },
-        { "start": "09:55", "end": "10:45", "task": "講台信息" },
-        { "start": "10:45", "end": "11:05", "task": "擘餅聚會" },
-        { "start": "11:05", "end": "11:30", "task": "祝福代禱" }
-    ],
-    "groups": {
-        "weekday": [], "sunday": [], "special": []
-    },
+    "theme": { "title": "神坐著為王： 一無所懼，一無所缺", "speaker": "葉志偉 牧師", "moderator": "李宜潔 傳道", "scripture": "馬太福音 28/19-20" },
+    "sermonOutline": [{ "title": "一、一群加利利無知的小民", "content": ["1. 在耶穌復活升天後"] }],
+    "songs": { "worship": ["獻上讚美祭"], "response": ["我神真偉大"] },
+    "schedule": [{ "start": "09:30", "end": "09:50", "task": "敬拜讚美" }],
+    "groups": { "weekday": [], "sunday": [], "special": [] },
     "overseas": [],
-    "announcements": [
-        { "id": 1, "title": "季同工會通知", "date": "5/1登記", "detail": "時間：5/7（四）晚上7:00\n地點：馬可樓" }
-    ],
-    "offering": {
-        "name": "社團法人中華基督教風一族職場福音協會",
-        "bank": "華南銀行 (008) 儲蓄分行",
-        "account": "101-10-007255-0"
-    },
-    "office": {
-        "name": "馬可樓辦公室",
-        "phone": "(02) 8772-7857",
-        "address": "台北市大安區市民大道三段 148 號 4 樓"
-    }
+    "announcements": [{ "id": 1, "title": "季同工會通知", "date": "5/1登記", "detail": "地點：馬可樓" }],
+    "offering": { "name": "社團法人中華基督教風一族職場福音協會", "bank": "華南銀行 (008)", "account": "101-10-007255-0" },
+    "office": { "name": "馬可樓辦公室", "phone": "(02) 8772-7857", "address": "台北市大安區市民大道三段 148 號 4 樓" }
 };
 
+// ================= UI 元件 =================
 const Btn = ({onClick, children, variant='default', size='md', className='', disabled=false, style={}}) => {
-  const base = "inline-flex items-center gap-2 rounded-lg font-medium transition-all duration-150 border";
+  const base = "inline-flex items-center justify-center gap-2 font-bold transition-all duration-200 border whitespace-nowrap rounded-full";
   const variants = {
-    default: "bg-transparent border-[#2e2e2e] text-[#ccc] hover:border-[#444] hover:text-white",
-    primary: "bg-[#4ade80] border-[#4ade80] text-[#0f0f0f] hover:bg-[#22c55e]",
-    danger: "bg-transparent border-[#ef4444]/50 text-[#ef4444] hover:bg-[#ef4444]/10",
-    ghost: "bg-transparent border-transparent text-[#888] hover:text-[#ccc]"
+    // 高對比主要按鈕 (儲存)
+    primary: "bg-[var(--primary)] border-[var(--primary)] text-[var(--on-primary)] shadow-sm hover:bg-[var(--primary-hover)]",
+    // 高對比次要按鈕 (預覽/白色)
+    elevated: "bg-[var(--secondary)] border-transparent text-[var(--on-secondary)] shadow-sm hover:brightness-90",
+    // 虛線按鈕 (新增類)
+    dashed: "bg-[rgba(138,180,248,0.05)] border border-dashed border-[var(--border-hover)] text-[var(--primary)] hover:bg-[rgba(138,180,248,0.15)] hover:border-[var(--primary)]",
+    // 一般框線按鈕
+    default: "bg-transparent border-[var(--border-main)] text-[var(--primary)] hover:bg-[var(--bg-input)] hover:border-[var(--border-hover)]",
+    danger: "bg-transparent border-[var(--danger)] text-[var(--danger)] hover:bg-[rgba(242,139,130,0.1)]",
+    ghost: "bg-transparent border-transparent text-[var(--text-main)] hover:bg-[var(--bg-input)]"
   };
-  const sizes = {sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm", lg: "px-5 py-2.5 text-base"};
-  return <button type={onClick ? 'button' : 'submit'} onClick={onClick} disabled={disabled} style={style} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
+  const sizes = {sm: "px-4 py-1.5 text-xs", md: "px-6 py-2.5 text-sm", lg: "px-8 py-3.5 text-base"};
+  return <button onClick={onClick} disabled={disabled} style={{...style, opacity: disabled ? 0.5 : 1}} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>{children}</button>;
 };
 
 const SortControls = ({onMoveUp, onMoveDown, isFirst, isLast}) => (
-  <div className="sort-controls">
-    <button type="button" className="sort-btn" onClick={onMoveUp} disabled={isFirst} title="上移">▲</button>
-    <button type="button" className="sort-btn" onClick={onMoveDown} disabled={isLast} title="下移">▼</button>
+  <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+    <button className="icon-btn" onClick={onMoveUp} disabled={isFirst} title="上移"><span className="material-symbols-outlined" style={{fontSize:'20px'}}>arrow_upward</span></button>
+    <button className="icon-btn" onClick={onMoveDown} disabled={isLast} title="下移"><span className="material-symbols-outlined" style={{fontSize:'20px'}}>arrow_downward</span></button>
   </div>
 );
 
-const Card = ({children}) => <div style={{background:'#161616',border:'1px solid #222',borderRadius:'10px',padding:'20px',marginBottom:'16px'}}>{children}</div>;
-const SectionTitle = ({children}) => <h3 style={{fontSize:'11px',fontWeight:'700',color:'#4ade80',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'16px'}}>{children}</h3>;
-const Field = ({label, children}) => <div style={{marginBottom:'14px'}}><label>{label}</label>{children}</div>;
+const Card = ({children, style={}}) => (
+  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-main)', borderRadius: '16px', padding: '24px', marginBottom: '24px', ...style }}>{children}</div>
+);
 
-// ==========================================
-// 預覽與列印版面元件
-// ==========================================
+const SectionTitle = ({children}) => <h3 style={{fontSize:'16px',fontWeight:'700',color:'var(--primary)',display:'flex',alignItems:'center',gap:'8px',marginBottom:'20px'}}><span className="material-symbols-outlined">edit_document</span>{children}</h3>;
+const Field = ({label, children}) => <div style={{marginBottom:'16px'}}><label>{label}</label>{children}</div>;
+
+// ================= 預覽 A4 介面 =================
 const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   const parts = data.bulletinDate.split('-');
   const year = parts[0] || '2026';
@@ -288,255 +299,237 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   const outOfTownGroups = data.groups.special.filter(g => g.category === '外縣市');
 
   return (
-    <div className="a4-container">
-      {/* ──────────────── 第一頁 (正面) ──────────────── */}
-      <div className="a4-page" id="page-1">
-        <div className="pdf-header">
-          <div className="pdf-logo-area">
-            <img src="./2022logo (1).png" alt="logo" style={{width:'50px', height:'50px', objectFit:'contain'}} />
-            <div>
-              <div style={{fontSize:'11px', color:'var(--brand-blue)', fontWeight:'bold'}}>中華基督教</div>
-              <div className="pdf-logo-text">風一族職場教會</div>
-              <div style={{fontSize:'9.5px', color:'#666', letterSpacing:'1px', marginTop:'1px'}}>彼此相愛 · 成全聖徒 · 各盡其職 · 完成使命</div>
-            </div>
-          </div>
-          <div className="pdf-vision">
-            <div className="pdf-vision-title">— {year} 年度異象 —</div>
-            <div className="pdf-vision-text">{data.vision}</div>
-          </div>
-          <div className="pdf-date-box">
-            <div className="pdf-date-week">{data.weekNumber}</div>
-            <div className="pdf-date-num">{year}<br/>{mmdd}</div>
-          </div>
-        </div>
-
-        <div className="pdf-theme-box">
-          <div className="pdf-theme-top">
-            <div className="pdf-theme-badge">主題</div>
-            <div className="pdf-theme-title">{data.theme.title}</div>
-            <div className="pdf-theme-speakers">
-              講員 <span>|</span> {data.theme.speaker} &nbsp;&nbsp; 司會 <span>|</span> {data.theme.moderator}
-            </div>
-          </div>
-          <div className="pdf-theme-bottom">
-            <div className="pdf-theme-bottom-label">經文</div>
-            <div>{data.theme.scripture}</div>
-          </div>
-        </div>
-
-        <div className="pdf-content-grid">
-          {/* 左欄：高度鎖定 210px */}
-          <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 210px' }}>
-            <div className="pdf-card">
-              <div className="pdf-card-title">📖 信息大綱</div>
-              <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
-                {data.sermonOutline.map((item, idx) => (
-                  <div key={idx} style={{marginBottom: '8px'}}>
-                    <div className="content-heading">{item.title}</div>
-                    {item.content.map((c, ci) => (
-                      <div key={ci} className="outline-text">{c}</div>
-                    ))}
-                  </div>
-                ))}
+    <div className="a4-preview-wrapper hide-scrollbar">
+      <div className="a4-container">
+        {/* 第一頁 (正面) */}
+        <div className="a4-page" id="page-1">
+          <div className="pdf-header">
+            <div className="pdf-logo-area">
+              <img src="./2022logo (1).png" alt="logo" style={{width:'50px', height:'50px', objectFit:'contain'}} />
+              <div>
+                <div style={{fontSize:'11px', color:'var(--brand-blue)', fontWeight:'bold'}}>中華基督教</div>
+                <div className="pdf-logo-text">風一族職場教會</div>
+                <div style={{fontSize:'9.5px', color:'#666', letterSpacing:'1px', marginTop:'1px'}}>彼此相愛 · 成全聖徒 · 各盡其職 · 完成使命</div>
               </div>
             </div>
+            <div className="pdf-vision">
+              <div className="pdf-vision-title">— {year} 年度異象 —</div>
+              <div className="pdf-vision-text">{data.vision}</div>
+            </div>
+            <div className="pdf-date-box">
+              <div className="pdf-date-week">{data.weekNumber}</div>
+              <div className="pdf-date-num">{year}<br/>{mmdd}</div>
+            </div>
+          </div>
 
-            {!isLongOutline && (
+          <div className="pdf-theme-box">
+            <div className="pdf-theme-top">
+              <div className="pdf-theme-badge">主題</div>
+              <div className="pdf-theme-title">{data.theme.title}</div>
+              <div className="pdf-theme-speakers">
+                講員 <span>|</span> {data.theme.speaker} &nbsp;&nbsp; 司會 <span>|</span> {data.theme.moderator}
+              </div>
+            </div>
+            <div className="pdf-theme-bottom">
+              <div className="pdf-theme-bottom-label">經文</div>
+              <div>{data.theme.scripture}</div>
+            </div>
+          </div>
+
+          <div className="pdf-content-grid">
+            <div className="pdf-col" style={{ gridTemplateRows: isLongOutline ? '1fr' : 'minmax(0, 1fr) 210px' }}>
               <div className="pdf-card">
-                <div className="pdf-card-title">📅 聚會流程</div>
-                <table className="clean-schedule-table">
-                  <tbody>
-                    {data.schedule.map((item, idx) => (
-                      <tr key={idx}>
-                        <td style={{ fontWeight:'bold', width: '90px' }}>{item.start}-{item.end}</td>
-                        <td>{item.task}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* 右欄：高度鎖定 210px */}
-          <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 210px' }}>
-            <div className="pdf-card">
-              <div className="pdf-card-title">🔔 教會消息</div>
-              <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
-                {data.announcements.map((a, idx) => (
-                  <div key={idx} style={{ marginBottom: '10px' }}>
-                    <div className="content-heading">
-                      {["一","二","三","四","五"][idx] || idx+1}、{a.title}
+                <div className="pdf-card-title">📖 信息大綱</div>
+                <div ref={outlineRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
+                  {data.sermonOutline.map((item, idx) => (
+                    <div key={idx} style={{marginBottom: '8px'}}>
+                      <div className="content-heading">{item.title}</div>
+                      {item.content.map((c, ci) => (
+                        <div key={ci} className="outline-text">{c}</div>
+                      ))}
                     </div>
-                    <ul className="custom-list">
-                      {a.detail.split('\n').map((line, li) => <li key={li}>{line}</li>)}
-                    </ul>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {isLongOutline ? (
-              <div className="pdf-card" style={{ flexDirection: 'row', gap: '10px', padding: '12px' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingRight: '4px' }}>
-                  <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>📅 聚會流程</div>
-                  <table className="clean-schedule-table" style={{ fontSize: '12.5px' }}>
+              {!isLongOutline && (
+                <div className="pdf-card">
+                  <div className="pdf-card-title">📅 聚會流程</div>
+                  <table className="clean-schedule-table">
                     <tbody>
                       {data.schedule.map((item, idx) => (
                         <tr key={idx}>
-                          <td style={{ fontWeight:'bold', width: '80px', padding: '2px 0' }}>{item.start}-{item.end}</td>
-                          <td style={{ padding: '2px 0' }}>{item.task}</td>
+                          <td style={{ fontWeight:'bold', width: '90px' }}>{item.start}-{item.end}</td>
+                          <td>{item.task}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
-                  <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
-                  
-                  <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
-                  <ol className="custom-list" style={{ listStyleType: data.songs.worship.length > 1 ? 'decimal' : 'none', paddingLeft: data.songs.worship.length > 1 ? '16px' : '4px', fontSize: '12.5px', marginBottom: '6px' }}>
-                    {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
-                  </ol>
-                  
-                  <div className="song-category-title" style={{ fontSize: '12.5px' }}>回應詩歌</div>
-                  <ol className="custom-list" style={{ listStyleType: data.songs.response.length > 1 ? 'decimal' : 'none', paddingLeft: data.songs.response.length > 1 ? '16px' : '4px', fontSize: '12.5px' }}>
-                    {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-                  </ol>
+              )}
+            </div>
 
+            <div className="pdf-col" style={{ gridTemplateRows: 'minmax(0, 1fr) 210px' }}>
+              <div className="pdf-card">
+                <div className="pdf-card-title">🔔 教會消息</div>
+                <div ref={announcementsRef} style={{overflow: 'hidden', flex: '1 1 0%', minHeight: 0}}>
+                  {data.announcements.map((a, idx) => (
+                    <div key={idx} style={{ marginBottom: '10px' }}>
+                      <div className="content-heading">
+                        {["一","二","三","四","五"][idx] || idx+1}、{a.title}
+                      </div>
+                      <ul className="custom-list">
+                        {a.detail.split('\n').map((line, li) => <li key={li}>{line}</li>)}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ) : (
-              <div className="pdf-card">
-                <div className="pdf-card-title">🎵 敬拜詩歌</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: '1 1 0%' }}>
-                  
-                  <div>
-                    <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
-                    <ol 
-                      className="custom-list" 
-                      style={{ 
-                        listStyleType: data.songs.worship.length > 1 ? 'decimal' : 'none', 
-                        paddingLeft: data.songs.worship.length > 1 ? '20px' : '4px' 
-                      }}
-                    >
+
+              {isLongOutline ? (
+                <div className="pdf-card" style={{ flexDirection: 'row', gap: '10px', padding: '12px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingRight: '4px' }}>
+                    <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>📅 聚會流程</div>
+                    <table className="clean-schedule-table" style={{ fontSize: '12.5px' }}>
+                      <tbody>
+                        {data.schedule.map((item, idx) => (
+                          <tr key={idx}>
+                            <td style={{ fontWeight:'bold', width: '80px', padding: '2px 0' }}>{item.start}-{item.end}</td>
+                            <td style={{ padding: '2px 0' }}>{item.task}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 4px' }}></div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingLeft: '4px' }}>
+                    <div className="pdf-card-title" style={{ fontSize: '15px', marginBottom: '8px' }}>🎵 敬拜詩歌</div>
+                    <div className="song-category-title" style={{ fontSize: '12.5px', marginTop: '4px' }}>敬拜歌曲</div>
+                    <ol className="custom-list" style={{ fontSize: '12.5px', marginBottom: '6px' }}>
                       {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
                     </ol>
-                  </div>
-
-                  <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
-                    <div className="song-category-title" style={{ marginTop: '4px' }}>回應詩歌</div>
-                    <ol 
-                      className="custom-list" 
-                      style={{ 
-                        listStyleType: data.songs.response.length > 1 ? 'decimal' : 'none', 
-                        paddingLeft: data.songs.response.length > 1 ? '20px' : '4px' 
-                      }}
-                    >
+                    <div className="song-category-title" style={{ fontSize: '12.5px' }}>回應詩歌</div>
+                    <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px', fontSize: '12.5px' }}>
                       {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
-                    </ol>
+                    </ul>
                   </div>
-
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ──────────────── 第二頁 (背面) ──────────────── */}
-      <div className="a4-page" id="page-2" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-          <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🔠 教會小組</div>
-        </div>
-
-        <div className="pdf-page-2-grid">
-          <table className="pdf-table">
-            <thead><tr><th>週間小組名稱</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
-            <tbody>
-              {data.groups.weekday.map((g, i) => (
-                <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
-              ))}
-            </tbody>
-          </table>
-          <table className="pdf-table">
-            <thead><tr><th>主日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
-            <tbody>
-              {data.groups.sunday.map((g, i) => (
-                <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="pdf-page-2-special-grid">
-          <div className="pdf-card" style={{ padding: '15px' }}>
-            <div className="pdf-card-title" style={{ fontSize: '15px' }}>⭐ 特色團契 / 課程</div>
-            {specialGroups.length > 0 ? specialGroups.map((g, i) => (
-              <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
-                <div>{g.time}</div>
-                <div>{g.loc}</div>
-                <div>負責：{g.leader}</div>
-              </div>
-            )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic' }}>無資料</div>}
-          </div>
-
-          <div className="pdf-card" style={{ padding: '15px' }}>
-            <div className="pdf-card-title" style={{ fontSize: '15px' }}>📖 讀經小組</div>
-            {readingGroups.length > 0 ? readingGroups.map((g, i) => (
-              <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
-                <div>{g.time}</div>
-                <div>{g.loc}</div>
-                <div>組長：{g.leader}</div>
-              </div>
-            )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: '30px' }}>目前無資料</div>}
-          </div>
-
-          <div className="pdf-card" style={{ padding: '15px' }}>
-            <div className="pdf-card-title" style={{ fontSize: '15px' }}>📍 外縣市小組</div>
-            {outOfTownGroups.length > 0 ? outOfTownGroups.map((g, i) => (
-              <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
-                <div>{g.time}</div>
-                <div>{g.loc}</div>
-                <div>組長：{g.leader}</div>
-              </div>
-            )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: '30px' }}>目前無資料</div>}
-          </div>
-        </div>
-
-        <div className="pdf-card" style={{ marginBottom: '20px' }}>
-          <div className="pdf-card-title">🌍 海外分會</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {data.overseas.map((o, i) => (
-              <div key={i} style={{ fontSize: '13px', color: '#222', lineHeight: '1.6' }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px', marginBottom: '4px' }}>{o.flag} {o.o_name || o.name}</div>
-                <div>牧師：{o.leader}</div>
-                <div>主日聚會：{o.time}</div>
-                <div>聚會地點：{o.loc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="pdf-dark-footer">
-          <div>
-            <div className="pdf-dark-title">🎁 奉獻帳戶資訊</div>
-            <div className="pdf-dark-text">
-              戶名：{data.offering.name}<br/>
-              帳號：{data.offering.bank} &nbsp; {data.offering.account}<br/>
-              <span style={{ borderBottom: '1px solid #cbd5e1', marginTop: '4px', display: 'inline-block' }}>* 透過銀行轉帳奉獻後，請通知辦公室同工 *</span>
+              ) : (
+                <div className="pdf-card">
+                  <div className="pdf-card-title">🎵 敬拜詩歌</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: '1 1 0%' }}>
+                    <div>
+                      <div className="song-category-title" style={{ marginTop: '4px' }}>敬拜歌曲</div>
+                      <ol className="custom-list">
+                        {data.songs.worship.map((s, i) => <li key={i}>{s}</li>)}
+                      </ol>
+                    </div>
+                    <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '12px' }}>
+                      <div className="song-category-title" style={{ marginTop: '4px' }}>回應詩歌</div>
+                      <ul className="custom-list" style={{ listStyleType: 'none', paddingLeft: '4px' }}>
+                        {data.songs.response.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <div>
-            <div className="pdf-dark-title">📞 聯絡我們</div>
-            <div className="pdf-dark-text">
-              {data.office.name}<br/>
-              電話：{data.office.phone}<br/>
-              地址：{data.office.address}
+        </div>
+
+        {/* 第二頁 (背面) */}
+        <div className="a4-page" id="page-2" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+            <div className="pdf-card-title" style={{ border: 'none', margin: 0, padding: 0, fontSize: '20px' }}>🔠 教會小組</div>
+          </div>
+
+          <div className="pdf-page-2-grid">
+            <table className="pdf-table">
+              <thead><tr><th>週間小組名稱</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+              <tbody>
+                {data.groups.weekday.map((g, i) => (
+                  <tr key={'w'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <table className="pdf-table">
+              <thead><tr><th>主日/青年小組</th><th>聚會時間</th><th>組長</th><th>地點</th></tr></thead>
+              <tbody>
+                {data.groups.sunday.map((g, i) => (
+                  <tr key={'s'+i}><td>{g.name}</td><td>{g.time}</td><td>{g.leader}</td><td>{g.loc}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pdf-page-2-special-grid">
+            <div className="pdf-card" style={{ padding: '15px' }}>
+              <div className="pdf-card-title" style={{ fontSize: '15px' }}>⭐ 特色團契 / 課程</div>
+              {specialGroups.length > 0 ? specialGroups.map((g, i) => (
+                <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
+                  <div>{g.time}</div>
+                  <div>{g.loc}</div>
+                  <div>負責：{g.leader}</div>
+                </div>
+              )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic' }}>無資料</div>}
+            </div>
+
+            <div className="pdf-card" style={{ padding: '15px' }}>
+              <div className="pdf-card-title" style={{ fontSize: '15px' }}>📖 讀經小組</div>
+              {readingGroups.length > 0 ? readingGroups.map((g, i) => (
+                <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
+                  <div>{g.time}</div>
+                  <div>{g.loc}</div>
+                  <div>組長：{g.leader}</div>
+                </div>
+              )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: '30px' }}>目前無資料</div>}
+            </div>
+
+            <div className="pdf-card" style={{ padding: '15px' }}>
+              <div className="pdf-card-title" style={{ fontSize: '15px' }}>📍 外縣市小組</div>
+              {outOfTownGroups.length > 0 ? outOfTownGroups.map((g, i) => (
+                <div key={i} style={{ marginBottom: '12px', fontSize: '13px', color: '#222', lineHeight: '1.5' }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px' }}>{g.name}</div>
+                  <div>{g.time}</div>
+                  <div>{g.loc}</div>
+                  <div>組長：{g.leader}</div>
+                </div>
+              )) : <div style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: '30px' }}>目前無資料</div>}
+            </div>
+          </div>
+
+          <div className="pdf-card" style={{ marginBottom: '20px' }}>
+            <div className="pdf-card-title">🌍 海外分會</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              {data.overseas.map((o, i) => (
+                <div key={i} style={{ fontSize: '13px', color: '#222', lineHeight: '1.6' }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--brand-blue)', fontSize: '14px', marginBottom: '4px' }}>{o.flag} {o.name}</div>
+                  <div>牧師：{o.leader}</div>
+                  <div>主日聚會：{o.time}</div>
+                  <div>聚會地點：{o.loc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pdf-dark-footer">
+            <div>
+              <div className="pdf-dark-title">🎁 奉獻帳戶資訊</div>
+              <div className="pdf-dark-text">
+                戶名：{data.offering.name}<br/>
+                帳號：{data.offering.bank} &nbsp; {data.offering.account}<br/>
+                <span style={{ borderBottom: '1px solid #cbd5e1', marginTop: '4px', display: 'inline-block' }}>* 透過銀行轉帳奉獻後，請通知辦公室同工 *</span>
+              </div>
+            </div>
+            <div>
+              <div className="pdf-dark-title">📞 聯絡我們</div>
+              <div className="pdf-dark-text">
+                {data.office.name}<br/>
+                電話：{data.office.phone}<br/>
+                地址：{data.office.address}
+              </div>
             </div>
           </div>
         </div>
@@ -545,7 +538,13 @@ const BulletinPreview = ({ data, outlineRef, announcementsRef }) => {
   );
 };
 
+// ================= 主程式 =================
 function App() {
+  const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   const [data, setData] = useState(null); 
   const [activeSection, setActiveSection] = useState('basic');
   const [groupTab, setGroupTab] = useState('weekday');
@@ -553,12 +552,6 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  
-  // 新增：登入相關的狀態
-  const [user, setUser] = useState(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const outlineRef = useRef(null);
   const announcementsRef = useRef(null);
@@ -566,39 +559,39 @@ function App() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
-  // 監聽 Firebase 登入狀態
+  // 驗證狀態監聽
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
-      if (u) {
-        setUser(u);
-      } else {
-        setUser(null);
-        setData(null); // 登出後清空前端資料
-      }
-      setIsAuthChecking(false);
+    const unsubscribe = auth.onAuthStateChanged(u => {
+      setUser(u);
+      setIsAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  // 只有在登入後才連接資料庫讀取資料
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try { await auth.signInWithEmailAndPassword(email, password); } 
+    catch (err) { showToast('❌ 登入失敗：' + err.message); }
+  };
+
+  // 資料監聽 (登入後)
   useEffect(() => {
-    if (!user) return; // 未登入不動作
-    
+    if (!user) return;
     const bulletinRef = db.ref('bulletin_data');
     bulletinRef.on('value', (snapshot) => {
       const cloudData = snapshot.val();
       if (cloudData) {
         if (!cloudData.layout) cloudData.layout = { longOutline: false };
         setData(cloudData);
-        setIsConnected(true);
       } else {
         setData(DEFAULT_DATA);
-        setIsConnected(true);
       }
+      setIsConnected(true);
     });
     return () => bulletinRef.off();
   }, [user]);
 
+  // 溢出偵測
   useEffect(() => {
     if (activeSection !== 'preview' || !data) return;
     const checkOverflow = () => {
@@ -611,58 +604,61 @@ function App() {
     setTimeout(checkOverflow, 300);
   }, [data, activeSection]);
 
-  // 新增：處理登入
-  const handleLogin = (e) => {
-    e.preventDefault();
-    auth.signInWithEmailAndPassword(email, password)
-      .then(() => showToast('✅ 登入成功'))
-      .catch(err => showToast('❌ 登入失敗：' + err.message));
-  };
+  if (isAuthLoading) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>載入中...</div>;
 
-  // 新增：處理登出
-  const handleLogout = () => {
-    auth.signOut().then(() => showToast('✅ 已安全登出'));
-  };
+  // ================= 登入畫面 =================
+  if (!user) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <div style={{textAlign:'center', marginBottom:'30px'}}>
+            <div style={{width:'48px', height:'48px', background:'var(--primary)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)', margin:'0 auto 16px'}}>
+              <span className="material-symbols-outlined" style={{fontSize:'28px'}}>church</span>
+            </div>
+            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.0</h2>
+          </div>
+          <form onSubmit={handleLogin}>
+            <Field label="帳號 (Email)"><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></Field>
+            <Field label="密碼"><input type="password" required value={password} onChange={e=>setPassword(e.target.value)} /></Field>
+            <Btn variant="primary" size="lg" style={{width:'100%', marginTop:'10px'}}>登入</Btn>
+          </form>
+          {toast && <div style={{color:'var(--danger)', marginTop:'16px', textAlign:'center', fontSize:'13px'}}>{toast}</div>}
+        </div>
+      </div>
+    );
+  }
 
+  // ================= 功能函數 =================
   const save = async () => {
     setIsSaving(true);
-    db.ref('bulletin_data').set(data)
-      .then(() => showToast('🚀 儲存成功！手機版已即時更新'))
-      .catch((err) => showToast('❌ 儲存失敗：' + err.message))
-      .finally(() => setIsSaving(false));
+    db.ref('bulletin_data').set(data).then(() => showToast('🚀 儲存成功！')).catch((err) => showToast('❌ 儲存失敗：' + err.message)).finally(() => setIsSaving(false));
   };
 
   const update = (path, value) => {
     setData(prev => {
       const next = JSON.parse(JSON.stringify(prev));
-      const keys = path.split('.');
-      let obj = next;
+      const keys = path.split('.'); let obj = next;
       for (let i=0; i<keys.length-1; i++) obj = obj[keys[i]];
-      obj[keys[keys.length-1]] = value;
-      return next;
+      obj[keys[keys.length-1]] = value; return next;
+    });
+  };
+
+  const moveItem = (path, from, to) => {
+    setData(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const keys = path.split('.'); let list = next;
+      for (let k of keys) list = list[k];
+      const item = list.splice(from, 1)[0]; list.splice(to, 0, item); return next;
     });
   };
 
   const calculateWeekNumber = () => {
     const d = new Date(data.bulletinDate);
     if (isNaN(d.getTime())) return showToast('日期格式錯誤');
-    const day = d.getDate();
-    const weekIdx = Math.ceil(day / 7);
+    const day = d.getDate(); const weekIdx = Math.ceil(day / 7);
     const chineseWeeks = ["第一週", "第二週", "第三週", "第四週", "第五週"];
     update('weekNumber', chineseWeeks[weekIdx-1] || "第一週");
     showToast(`自動設定為 ${chineseWeeks[weekIdx-1]}`);
-  };
-
-  const moveItem = (path, from, to) => {
-    setData(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
-      const keys = path.split('.');
-      let list = next;
-      for (let k of keys) list = list[k];
-      const item = list.splice(from, 1)[0];
-      list.splice(to, 0, item);
-      return next;
-    });
   };
 
   // ================= 匯出與雲端發佈功能 =================
@@ -677,7 +673,7 @@ function App() {
       link.href = canvas.toDataURL(`image/${format}`);
       link.click();
     } catch (err) {
-      showToast('匯出圖片失敗：' + err.message);
+      showToast('❌ 匯出圖片失敗：' + err.message);
     }
     setIsExporting(false);
   };
@@ -700,15 +696,11 @@ function App() {
 
       if (mode === 'page2' || mode === 'all') {
         const canvas2 = await html2canvas(p2, { scale: 2, useCORS: true });
-        if (mode === 'page2') {
-           pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
-        } else {
-           pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
-        }
+        pdf.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
       }
       pdf.save(mode === 'all' ? '風一族週報_完整版.pdf' : `風一族週報_${mode}.pdf`);
     } catch (err) {
-      showToast('匯出 PDF 失敗：' + err.message);
+      showToast('❌ 匯出 PDF 失敗：' + err.message);
     }
     setIsExporting(false);
   };
@@ -744,35 +736,30 @@ function App() {
       showToast('✅ PDF 已成功發佈至前台！');
     } catch (err) {
       console.error(err);
-      showToast('❌ 發佈失敗：' + err.message + ' (請確認 Storage 規則有開啟)');
+      showToast('❌ 發佈失敗：' + err.message);
     }
     setIsExporting(false);
   };
 
-  const navItems = [
-    {id:'basic',label:'基本資訊'}, 
-    {id:'theme',label:'主題信息'}, 
-    {id:'sermon',label:'信息大綱'},
-    {id:'songs',label:'敬拜詩歌'}, 
-    {id:'schedule',label:'聚會流程'}, 
-    {id:'announcements',label:'教會公告'},
-    {id:'groups',label:'小組資訊'},
-    {id:'contact',label:'聯絡奉獻'}
-  ];
 
+  // ================= 區塊渲染 =================
   const renderSection = () => {
-    if (!data) return <div style={{padding:'20px'}}>連線中...</div>;
+    if (!data) return <div style={{padding:'20px'}}>讀取資料中...</div>;
     
     switch(activeSection) {
       case 'basic': return (
         <Card>
           <SectionTitle>基本資訊</SectionTitle>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', alignItems:'end'}}>
+          <div className="form-grid-2" style={{ marginBottom: '16px' }}>
             <Field label="週報日期"><input type="date" value={data.bulletinDate} onChange={e=>update('bulletinDate', e.target.value)}/></Field>
-            <div style={{display:'flex', gap:'8px', marginBottom:'14px'}}>
-              <div style={{flex:1}}><label>第幾週</label><input value={data.weekNumber} onChange={e=>update('weekNumber', e.target.value)}/></div>
-              <Btn onClick={calculateWeekNumber} style={{height:'42px'}}>自動換算</Btn>
-            </div>
+            <Field label={
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <span>第幾週</span>
+                <span onClick={calculateWeekNumber} style={{color:'var(--primary)', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px', padding:'2px 6px', background:'rgba(138,180,248,0.1)', borderRadius:'4px', fontSize:'12px'}}>
+                  <span className="material-symbols-outlined" style={{fontSize:'14px'}}>auto_awesome</span> 自動計算
+                </span>
+              </div>
+            }><input value={data.weekNumber} placeholder="例如：第一週" onChange={e=>update('weekNumber', e.target.value)}/></Field>
           </div>
           <Field label="年度異象"><input value={data.vision} onChange={e=>update('vision', e.target.value)}/></Field>
         </Card>
@@ -780,72 +767,81 @@ function App() {
 
       case 'sermon': return (
         <div>
-          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-            <span style={{color:'#4ade80', fontSize:'12px'}}>支援自定義標號，輸入空白可自動縮排。</span>
-            <Btn size="sm" variant="primary" onClick={()=>{
-              const n = [...data.sermonOutline, {title:'', content:[]}];
-              update('sermonOutline', n);
-            }}>+ 新增段落</Btn>
+          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px', alignItems:'center'}}>
+            <span style={{color:'var(--text-muted)', fontSize:'13px'}}>提示：輸入空白內容可自動縮排。</span>
           </div>
           {data.sermonOutline.map((item, idx)=>(
             <Card key={idx}>
-              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-                <div style={{display:'flex', alignItems:'center'}}>
-                  <span style={{color:'#4ade80', fontWeight:'bold', marginRight:'10px'}}>段落 {idx+1}</span>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px'}}>
+                <div style={{display:'flex', alignItems:'center', flex:1}}>
+                  <span style={{color:'var(--primary)', fontWeight:'bold', marginRight:'16px', whiteSpace:'nowrap'}}>段落 {idx+1}</span>
                   <SortControls isFirst={idx===0} isLast={idx===data.sermonOutline.length-1} onMoveUp={()=>moveItem('sermonOutline', idx, idx-1)} onMoveDown={()=>moveItem('sermonOutline', idx, idx+1)} />
                 </div>
-                <Btn size="sm" variant="danger" onClick={()=>{
-                  const n = data.sermonOutline.filter((_,i)=>i!==idx);
-                  update('sermonOutline', n);
-                }}>刪除</Btn>
+                <button className="icon-btn" style={{color: 'var(--danger)'}} onClick={()=>{
+                  const n = data.sermonOutline.filter((_,i)=>i!==idx); update('sermonOutline', n);
+                }}><span className="material-symbols-outlined">delete</span></button>
               </div>
+              
               <Field label="段落標題"><input value={item.title} onChange={e=>{
                 const n = [...data.sermonOutline]; n[idx].title = e.target.value; update('sermonOutline', n);
               }}/></Field>
-              <label>內容要點排序 (可直接輸入 1. 或 •)</label>
+              
+              <label>內容要點</label>
               {item.content.map((c, ci)=>(
-                <div key={ci} style={{display:'flex', gap:'8px', marginBottom:'6px', alignItems:'center'}}>
-                  <div style={{fontSize:'12px', color:'#4ade80', width:'20px'}}>{ci+1}.</div>
+                <div key={ci} style={{display:'flex', gap:'8px', marginBottom:'8px', alignItems:'flex-start'}}>
+                  <div style={{fontSize:'12px', color:'var(--text-muted)', width:'20px', marginTop:'12px', textAlign:'right'}}>{ci+1}.</div>
                   <div style={{flex:1, position:'relative'}}>
                     <textarea value={c} onChange={e=>{
                       const n = [...data.sermonOutline]; n[idx].content[ci] = e.target.value; update('sermonOutline', n);
-                    }}/>
+                    }} style={{minHeight:'60px'}}/>
                   </div>
-                  <SortControls isFirst={ci===0} isLast={ci===item.content.length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
-                  <Btn size="sm" variant="danger" onClick={()=>{
-                    const n = [...data.sermonOutline]; n[idx].content.splice(ci,1); update('sermonOutline', n);
-                  }}>✕</Btn>
+                  <div style={{display:'flex', flexDirection:'column', gap:'4px', marginTop:'4px'}}>
+                    <button className="icon-btn" onClick={()=>{
+                        const n = [...data.sermonOutline]; n[idx].content.splice(ci,1); update('sermonOutline', n);
+                    }}><span className="material-symbols-outlined" style={{fontSize:'18px', color:'var(--danger)'}}>close</span></button>
+                    <SortControls isFirst={ci===0} isLast={ci===item.content.length-1} onMoveUp={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci-1)} onMoveDown={()=>moveItem(`sermonOutline.${idx}.content`, ci, ci+1)} />
+                  </div>
                 </div>
               ))}
-              <Btn size="sm" onClick={()=>{
+              
+              {/* 置底：新增要點 */}
+              <Btn size="sm" variant="dashed" onClick={()=>{
                 const n = [...data.sermonOutline]; n[idx].content.push(''); update('sermonOutline', n);
-              }}>+ 新增要點</Btn>
+              }} style={{marginTop:'12px', width:'100%', padding:'10px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>add</span> 新增要點</Btn>
             </Card>
           ))}
+          
+          {/* 置底：新增段落 */}
+          <Btn size="lg" variant="dashed" onClick={()=>{
+              const n = [...data.sermonOutline, {title:'', content:[]}]; update('sermonOutline', n);
+            }} style={{ width: '100%', borderRadius: '12px' }}>
+            <span className="material-symbols-outlined">add_circle</span> 新增段落
+          </Btn>
         </div>
       );
 
       case 'songs': return (
         <Card>
-          <SectionTitle>敬拜詩歌 (空間固定，總數請保持 3~4 首)</SectionTitle>
+          <SectionTitle>敬拜詩歌 (建議維持 3~4 首)</SectionTitle>
           {['worship', 'response'].map(type => (
-            <div key={type} style={{marginBottom:'20px'}}>
-              <label>{type === 'worship' ? '1. 敬拜歌曲' : '2. 回應詩歌'}</label>
+            <div key={type} style={{marginBottom:'32px'}}>
+              <label style={{color:'var(--primary)', fontWeight:'bold', fontSize:'14px'}}>{type === 'worship' ? '1. 敬拜歌曲' : '2. 回應詩歌'}</label>
               {data.songs[type].map((s, i)=>(
                 <div key={i} className="list-item-row">
-                  <span style={{color:'#4ade80', marginRight:'10px', fontWeight:'bold'}}>{i+1}.</span>
-                  <input value={s} style={{flex:1}} onChange={e=>{
+                  <span style={{color:'var(--text-muted)', marginRight:'12px', fontWeight:'bold'}}>{i+1}.</span>
+                  <input value={s} style={{flex:1, border:'none', background:'transparent', padding:'0'}} onChange={e=>{
                     const n = [...data.songs[type]]; n[i] = e.target.value; update(`songs.${type}`, n);
-                  }}/>
+                  }} placeholder="輸入詩歌名稱"/>
                   <SortControls isFirst={i===0} isLast={i===data.songs[type].length-1} onMoveUp={()=>moveItem(`songs.${type}`, i, i-1)} onMoveDown={()=>moveItem(`songs.${type}`, i, i+1)} />
-                  <Btn size="sm" variant="danger" style={{marginLeft:'8px'}} onClick={()=>{
+                  <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
                     const n = data.songs[type].filter((_,idx)=>idx!==i); update(`songs.${type}`, n);
-                  }}>✕</Btn>
+                  }}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>close</span></button>
                 </div>
               ))}
-              <Btn size="sm" variant="primary" onClick={()=>{
+              {/* 置底：新增詩歌 */}
+              <Btn size="sm" variant="dashed" onClick={()=>{
                 const n = [...data.songs[type], '']; update(`songs.${type}`, n);
-              }}>+ 新增詩歌</Btn>
+              }} style={{width:'100%', padding:'10px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>add</span> 新增詩歌</Btn>
             </div>
           ))}
         </Card>
@@ -853,30 +849,33 @@ function App() {
 
       case 'schedule': return (
         <Card>
-          <SectionTitle>聚會流程排序 (建議控制在 5 個流程內)</SectionTitle>
+          <SectionTitle>聚會流程</SectionTitle>
           {data.schedule.map((item, idx)=>(
-            <div key={idx} className="list-item-row" style={{display:'grid', gridTemplateColumns:'30px 100px 100px 1fr auto', gap:'8px'}}>
-              <div style={{color:'#4ade80', fontWeight:'bold'}}>{idx+1}</div>
-              <input type="time" value={item.start} onChange={e=>{
+            <div key={idx} className="list-item-row schedule-grid">
+              <div className="idx" style={{color:'var(--text-muted)', fontWeight:'bold', textAlign:'center'}}>{idx+1}</div>
+              <input className="start" type="time" value={item.start} onChange={e=>{
                 const n = [...data.schedule]; n[idx].start = e.target.value; update('schedule', n);
               }}/>
-              <input type="time" value={item.end} onChange={e=>{
+              <input className="end" type="time" value={item.end} onChange={e=>{
                 const n = [...data.schedule]; n[idx].end = e.target.value; update('schedule', n);
               }}/>
-              <input value={item.task} onChange={e=>{
+              <input className="task" value={item.task} placeholder="流程項目" onChange={e=>{
                 const n = [...data.schedule]; n[idx].task = e.target.value; update('schedule', n);
               }}/>
-              <div style={{display:'flex', alignItems:'center'}}>
+              <div className="controls" style={{display:'flex', alignItems:'center'}}>
                 <SortControls isFirst={idx===0} isLast={idx===data.schedule.length-1} onMoveUp={()=>moveItem('schedule', idx, idx-1)} onMoveDown={()=>moveItem('schedule', idx, idx+1)} />
-                <Btn size="sm" variant="danger" style={{marginLeft:'8px'}} onClick={()=>{
+                <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
                    const n = data.schedule.filter((_,i)=>i!==idx); update('schedule', n);
-                }}>✕</Btn>
+                }}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>delete</span></button>
               </div>
             </div>
           ))}
-          <Btn size="sm" variant="primary" onClick={()=>{
+          {/* 置底：新增流程 */}
+          <Btn size="lg" variant="dashed" onClick={()=>{
             const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
-          }}>+ 新增流程</Btn>
+          }} style={{ width: '100%', borderRadius: '12px', marginTop:'12px' }}>
+            <span className="material-symbols-outlined">add_circle</span> 新增流程
+          </Btn>
         </Card>
       );
 
@@ -886,50 +885,34 @@ function App() {
 
         return (
           <div>
-            <div style={{background:'#0a0a0a', padding:'4px', borderRadius:'8px', display:'flex', gap:'4px', marginBottom:'16px', border:'1px solid #222'}}>
+            <div style={{background:'var(--bg-card)', padding:'4px', borderRadius:'12px', display:'flex', gap:'4px', marginBottom:'20px', border:'1px solid var(--border-main)', overflowX:'auto'}}>
               {['weekday','sunday','special','overseas'].map(t => (
                 <button key={t} onClick={()=>setGroupTab(t)} style={{
-                  flex:1, padding:'8px', border:'none', borderRadius:'6px', cursor:'pointer',
-                  background: groupTab===t ? '#1e1e1e' : 'transparent',
-                  color: groupTab===t ? '#4ade80' : '#666', fontSize:'13px'
+                  flex:1, minWidth:'80px', padding:'10px', border:'none', borderRadius:'8px', cursor:'pointer', whiteSpace:'nowrap',
+                  background: groupTab===t ? 'rgba(138,180,248,0.15)' : 'transparent',
+                  color: groupTab===t ? 'var(--primary)' : 'var(--text-muted)', 
+                  fontWeight: groupTab===t ? 'bold' : '500', transition:'all 0.2s'
                 }}>{t==='weekday'?'平日':t==='sunday'?'主日':t==='special'?'特色與外縣市':'海外'}</button>
               ))}
             </div>
-            <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'10px'}}>
-              <Btn size="sm" variant="primary" onClick={()=>{
-                const newItem = groupTab === 'overseas' 
-                  ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} 
-                  : {category:'特色', name:'', time:'', leader:'', loc:'請洽小組長'};
-                update(currentPath, [...currentList, newItem]);
-              }}>+ 新增</Btn>
-            </div>
+            
             {currentList.map((g, idx)=>(
               <Card key={idx}>
-                <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+                <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px'}}>
                   <div style={{display:'flex', alignItems:'center'}}>
-                    <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}># {idx+1} 排序</span>
-                    <SortControls 
-                      isFirst={idx===0} 
-                      isLast={idx===currentList.length-1} 
-                      onMoveUp={()=>moveItem(currentPath, idx, idx-1)} 
-                      onMoveDown={()=>moveItem(currentPath, idx, idx+1)} 
-                    />
+                    <span style={{fontSize:'13px', color:'var(--text-muted)', marginRight:'16px'}}>排序 # {idx+1}</span>
+                    <SortControls isFirst={idx===0} isLast={idx===currentList.length-1} onMoveUp={()=>moveItem(currentPath, idx, idx-1)} onMoveDown={()=>moveItem(currentPath, idx, idx+1)} />
                   </div>
-                  <Btn size="sm" variant="danger" onClick={()=>{
-                    const newList = currentList.filter((_,i)=>i!==idx);
-                    update(currentPath, newList);
-                  }}>刪除</Btn>
+                  <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
+                    const newList = currentList.filter((_,i)=>i!==idx); update(currentPath, newList);
+                  }}><span className="material-symbols-outlined">delete</span></button>
                 </div>
                 
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-                  
-                  {/* 特色/讀經/外縣市 分類下拉選單 */}
+                <div className="form-grid-2">
                   {groupTab === 'special' && (
                     <Field label="所屬分類">
                       <select value={g.category || '特色'} onChange={e=>{
-                         const newList = [...currentList];
-                         newList[idx] = {...newList[idx], category: e.target.value};
-                         update(currentPath, newList);
+                         const newList = [...currentList]; newList[idx] = {...newList[idx], category: e.target.value}; update(currentPath, newList);
                       }}>
                         <option value="特色">特色團契 / 課程</option>
                         <option value="讀經">讀經小組</option>
@@ -937,32 +920,20 @@ function App() {
                       </select>
                     </Field>
                   )}
-
                   <Field label="小組名稱"><input value={g.name || ''} onChange={e=>{
-                     const newList = [...currentList];
-                     newList[idx] = {...newList[idx], name: e.target.value};
-                     update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], name: e.target.value}; update(currentPath, newList);
                   }}/></Field>
-                  
                   <Field label="帶領人 / 牧師"><input value={g.leader || ''} onChange={e=>{
-                     const newList = [...currentList];
-                     newList[idx] = {...newList[idx], leader: e.target.value};
-                     update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], leader: e.target.value}; update(currentPath, newList);
                   }}/></Field>
-                  
                   <Field label="時間"><input value={g.time || ''} onChange={e=>{
-                     const newList = [...currentList];
-                     newList[idx] = {...newList[idx], time: e.target.value};
-                     update(currentPath, newList);
+                     const newList = [...currentList]; newList[idx] = {...newList[idx], time: e.target.value}; update(currentPath, newList);
                   }}/></Field>
                   
-                  {/* 使用 Datalist 結合 Input，達成可選擇可輸入 */}
                   <Field label="地點">
                     {groupTab === 'weekday' || groupTab === 'sunday' ? (
                       <select value={g.loc || '請洽小組長'} onChange={e=>{
-                         const newList = [...currentList];
-                         newList[idx] = {...newList[idx], loc: e.target.value};
-                         update(currentPath, newList);
+                         const newList = [...currentList]; newList[idx] = {...newList[idx], loc: e.target.value}; update(currentPath, newList);
                       }}>
                         <option value="馬可樓">馬可樓</option>
                         <option value="北科大">北科大</option>
@@ -970,61 +941,50 @@ function App() {
                       </select>
                     ) : (
                       <>
-                        <input 
-                          list={`loc-options-${idx}`} 
-                          placeholder="可自行輸入或選擇"
-                          value={g.loc || ''} 
-                          onChange={e=>{
-                           const newList = [...currentList];
-                           newList[idx] = {...newList[idx], loc: e.target.value};
-                           update(currentPath, newList);
-                          }}
-                        />
-                        <datalist id={`loc-options-${idx}`}>
-                          <option value="馬可樓" />
-                          <option value="北科大" />
-                          <option value="請洽小組長" />
-                        </datalist>
+                        <input list={`loc-options-${idx}`} placeholder="可自行輸入或選擇" value={g.loc || ''} onChange={e=>{
+                           const newList = [...currentList]; newList[idx] = {...newList[idx], loc: e.target.value}; update(currentPath, newList);
+                        }}/>
+                        <datalist id={`loc-options-${idx}`}><option value="馬可樓" /><option value="北科大" /><option value="請洽小組長" /></datalist>
                       </>
                     )}
                   </Field>
                   
                   {groupTab === 'overseas' && (
                     <Field label="國旗 (Emoji)"><input value={g.flag || ''} placeholder="例如: 🇬🇧" onChange={e=>{
-                       const newList = [...currentList];
-                       newList[idx] = {...newList[idx], flag: e.target.value};
-                       update(currentPath, newList);
+                       const newList = [...currentList]; newList[idx] = {...newList[idx], flag: e.target.value}; update(currentPath, newList);
                     }}/></Field>
                   )}
                 </div>
               </Card>
             ))}
+
+            {/* 置底：新增小組 */}
+            <Btn size="lg" variant="dashed" onClick={()=>{
+                const newItem = groupTab === 'overseas' 
+                  ? {name:'', leader:'', time:'', loc:'', flag:'🇬🇧'} 
+                  : {category:'特色', name:'', time:'', leader:'', loc:'請洽小組長'};
+                update(currentPath, [...currentList, newItem]);
+              }} style={{ width: '100%', borderRadius: '12px' }}>
+              <span className="material-symbols-outlined">add_circle</span> 新增小組
+            </Btn>
           </div>
         );
       }   
 
       case 'announcements': return (
         <div>
-          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
-            <span style={{color:'#ef4444', fontSize:'12px', fontWeight:'bold'}}>⚠️ 建議公告維持 4~5 則，每則內容不超過 100 字。</span>
-            <Btn size="sm" variant="primary" onClick={()=>{
-              const n = [...data.announcements, {id: Date.now(), title:'', date:'', detail:''}];
-              update('announcements', n);
-            }}>+ 新增公告</Btn>
-          </div>
           {data.announcements.map((a, idx)=>(
             <Card key={a.id}>
-              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'10px'}}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'16px'}}>
                 <div style={{display:'flex', alignItems:'center'}}>
-                  <span style={{fontSize:'12px', color:'#888', marginRight:'10px'}}>公告順序 # {idx+1}</span>
+                  <span style={{fontSize:'13px', color:'var(--text-muted)', marginRight:'16px'}}>順序 # {idx+1}</span>
                   <SortControls isFirst={idx===0} isLast={idx===data.announcements.length-1} onMoveUp={()=>moveItem('announcements', idx, idx-1)} onMoveDown={()=>moveItem('announcements', idx, idx+1)} />
                 </div>
-                <Btn size="sm" variant="danger" onClick={()=>{
-                  const n = data.announcements.filter((_,i)=>i!==idx);
-                  update('announcements', n);
-                }}>刪除</Btn>
+                <button className="icon-btn" style={{color:'var(--danger)'}} onClick={()=>{
+                  const n = data.announcements.filter((_,i)=>i!==idx); update('announcements', n);
+                }}><span className="material-symbols-outlined">delete</span></button>
               </div>
-              <div style={{display:'grid', gridTemplateColumns:'120px 1fr', gap:'12px'}}>
+              <div className="form-grid-announce">
                 <Field label="日期標籤"><input value={a.date} onChange={e=>{
                   const n = [...data.announcements]; n[idx].date = e.target.value; update('announcements', n);
                 }}/></Field>
@@ -1036,12 +996,19 @@ function App() {
                 <div style={{position:'relative'}}>
                   <textarea value={a.detail} onChange={e=>{
                      const n = [...data.announcements]; n[idx].detail = e.target.value; update('announcements', n);
-                  }}/>
+                  }} style={{paddingBottom:'24px'}}/>
                   <span className={`word-count ${a.detail.length > 100 ? 'warning' : ''}`}>{a.detail.length} / 100 字</span>
                 </div>
               </Field>
             </Card>
           ))}
+          
+          {/* 置底：新增公告 */}
+          <Btn size="lg" variant="dashed" onClick={()=>{
+              const n = [...data.announcements, {id: Date.now(), title:'', date:'', detail:''}]; update('announcements', n);
+            }} style={{ width: '100%', borderRadius: '12px' }}>
+            <span className="material-symbols-outlined">add_circle</span> 新增公告
+          </Btn>
         </div>
       );
 
@@ -1049,7 +1016,7 @@ function App() {
         <Card>
           <SectionTitle>信息主題</SectionTitle>
           <Field label="標題"><input value={data.theme.title} onChange={e=>update('theme.title', e.target.value)}/></Field>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+          <div className="form-grid-2">
             <Field label="講員"><input value={data.theme.speaker} onChange={e=>update('theme.speaker', e.target.value)}/></Field>
             <Field label="司會"><input value={data.theme.moderator} onChange={e=>update('theme.moderator', e.target.value)}/></Field>
           </div>
@@ -1073,61 +1040,36 @@ function App() {
       
       case 'preview': return (
         <div>
-           {/* 大綱長篇模式切換功能 */}
-           <div className="no-print" style={{ background: '#0a0a0a', border: '1px solid #333', padding: '12px 16px', borderRadius: '8px', marginBottom: '15px' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#4ade80', fontSize: '14px', fontWeight: 'bold' }}>
-                  <input 
-                      type="checkbox" 
-                      checked={data.layout?.longOutline || false} 
-                      onChange={e => update('layout.longOutline', e.target.checked)} 
-                      style={{ width: '18px', height: '18px', margin: 0, cursor: 'pointer' }}
-                  />
-                  啟用「長篇大綱模式」(當大綱字數過多時，可將流程移至右下角與詩歌並排)
+           <div className="no-print" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-main)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)', fontSize: '14px', fontWeight: 'bold', margin:0 }}>
+                  <input type="checkbox" checked={data.layout?.longOutline || false} onChange={e => update('layout.longOutline', e.target.checked)} style={{ width: '20px', height: '20px', margin: 0, cursor: 'pointer', accentColor: 'var(--primary)' }} />
+                  啟用「長篇大綱模式」(將流程移至右下角與詩歌並排)
               </label>
            </div>
 
-           {/* 動態警告橫幅 */}
-           <div className="no-print" style={{ 
-             display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', 
-             background: isOverflowing ? '#fee2e2' : '#f0fdf4', 
-             padding: '12px 16px', borderRadius: '8px', 
-             border: `1px solid ${isOverflowing ? '#ef4444' : '#4ade80'}` 
-           }}>
+           <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', alignItems: 'center', background: isOverflowing ? 'rgba(242,139,130,0.1)' : 'rgba(129,201,149,0.1)', padding: '16px', borderRadius: '12px', border: `1px solid ${isOverflowing ? 'var(--danger)' : 'var(--success)'}` }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                {isOverflowing ? (
-                 <span style={{ color: '#b91c1c', fontSize:'14px', fontWeight: 'bold' }}>
-                   🚨 警告：文字過多已超出卡片！請刪減字數，或勾選上方的「長篇大綱模式」。
-                 </span>
+                 <span style={{ color: 'var(--danger)', fontSize:'14px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'8px' }}><span className="material-symbols-outlined">warning</span>🚨 文字過多已超出卡片！請刪減字數或啟用長篇大綱。</span>
                ) : (
-                 <span style={{ color: '#166534', fontSize:'14px', fontWeight: 'bold' }}>
-                   ✅ 版面狀態良好，資訊已完整呈現於 A4 範圍內。
-                 </span>
+                 <span style={{ color: 'var(--success)', fontSize:'14px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'8px' }}><span className="material-symbols-outlined">check_circle</span>✅ 版面狀態良好，資訊已完整呈現。</span>
                )}
              </div>
            </div>
            
-           {/* 匯出下載工具列 */}
-           <div className="no-print" style={{ background: '#161616', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-             <span style={{color: '#aaa', fontSize: '13px', marginRight: '10px'}}>📥 快速下載：</span>
-             
-             <Btn size="sm" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
-             <Btn size="sm" onClick={() => exportToImage('page-1', 'jpeg')} disabled={isExporting}>P1 (JPEG)</Btn>
-             <Btn size="sm" onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
-             
-             <span style={{width: '1px', height: '24px', background: '#333', margin: '0 5px'}}></span>
-             
-             <Btn size="sm" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
-             <Btn size="sm" onClick={() => exportToImage('page-2', 'jpeg')} disabled={isExporting}>P2 (JPEG)</Btn>
-             <Btn size="sm" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
-             
-             <span style={{flex: 1}}></span>
-             
-             <Btn variant="primary" style={{ background: '#3b82f6', borderColor: '#3b82f6', color: '#fff' }} onClick={publishPDFToCloud} disabled={isExporting}>
-               {isExporting ? '處理中...' : '☁️ 產生 PDF 並發佈至前台'}
+           <div className="no-print" style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-main)', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+             <span style={{color: 'var(--text-muted)', fontSize: '13px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'18px'}}>download</span> 下載：</span>
+             <Btn size="sm" variant="default" onClick={() => exportToImage('page-1', 'png')} disabled={isExporting}>P1 (PNG)</Btn>
+             <Btn size="sm" variant="default" onClick={() => exportToPDF('page1')} disabled={isExporting}>P1 (PDF)</Btn>
+             <span style={{width: '1px', height: '24px', background: 'var(--border-main)', margin: '0 4px'}}></span>
+             <Btn size="sm" variant="default" onClick={() => exportToImage('page-2', 'png')} disabled={isExporting}>P2 (PNG)</Btn>
+             <Btn size="sm" variant="default" onClick={() => exportToPDF('page2')} disabled={isExporting}>P2 (PDF)</Btn>
+             <span style={{flex: 1, minWidth:'10px'}}></span>
+             <Btn variant="primary" onClick={publishPDFToCloud} disabled={isExporting}>
+               {isExporting ? '處理中...' : '☁️ 發佈 PDF 至前台'}
              </Btn>
-             
              <Btn variant={isOverflowing ? 'danger' : 'default'} onClick={() => exportToPDF('all')} disabled={isExporting}>
-               🖨️ 下載完整雙面 PDF
+               🖨️ 下載雙面 PDF
              </Btn>
            </div>
            
@@ -1139,83 +1081,78 @@ function App() {
     }
   };
 
-  // 1. 處理初始化驗證狀態畫面
-  if (isAuthChecking) {
-    return <div style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background:'#0f0f0f', color:'#888'}}>驗證登入狀態中...</div>;
-  }
+  const navItems = [
+    {id:'basic',label:'基本資訊', icon: 'info'}, 
+    {id:'theme',label:'主題信息', icon: 'campaign'}, 
+    {id:'sermon',label:'信息大綱', icon: 'format_list_bulleted'},
+    {id:'songs',label:'敬拜詩歌', icon: 'music_note'}, 
+    {id:'schedule',label:'聚會流程', icon: 'schedule'}, 
+    {id:'announcements',label:'教會公告', icon: 'notifications'},
+    {id:'groups',label:'小組資訊', icon: 'group'},
+    {id:'contact',label:'聯絡奉獻', icon: 'volunteer_activism'}
+  ];
 
-  // 2. 處理尚未登入的畫面
-  if (!user) {
-    return (
-      <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background:'#0f0f0f' }}>
-        <div style={{ width: '100%', maxWidth: '400px', padding: '20px' }}>
-          <Card>
-            <SectionTitle>風一族週報管理系統</SectionTitle>
-            <form onSubmit={handleLogin}>
-              <Field label="帳號 (Email)"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="輸入教會信箱" /></Field>
-              <Field label="密碼"><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required placeholder="輸入密碼" /></Field>
-              <Btn variant="primary" style={{width:'100%', marginTop: '10px'}}>進入系統</Btn>
-            </form>
-          </Card>
-        </div>
-        {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.5)'}}>{toast}</div>}
-      </div>
-    );
-  }
-
-  // 3. 已登入後顯示的主畫面
   return (
     <div style={{display:'flex', flexDirection:'column', minHeight:'100vh'}}>
-      <div className="no-print" style={{background:'#111', borderBottom:'1px solid #1e1e1e', padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100}}>
-        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-          <div style={{width:'32px', height:'32px', background:'#4ade80', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', color:'#000'}}>✦</div>
+      <div className="no-print admin-header">
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <div style={{width:'36px', height:'36px', background:'var(--primary)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)'}}>
+            <span className="material-symbols-outlined">church</span>
+          </div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700'}}>風一族週報後台 v3.0</div>
-            <div style={{fontSize:'11px', color: isConnected ? '#4ade80' : '#888'}}>
-                {isConnected ? '● 已連線雲端' : '○ 載入中...'}
+            <div style={{fontSize:'16px', fontWeight:'700', color:'var(--text-main)'}}>週報後台 v4.1</div>
+            <div style={{fontSize:'12px', color: isConnected ? 'var(--success)' : 'var(--text-muted)', display:'flex', alignItems:'center', gap:'4px'}}>
+                {isConnected ? <><span className="material-symbols-outlined" style={{fontSize:'14px'}}>cloud_done</span>已連線雲端</> : '○ 載入中...'}
             </div>
           </div>
         </div>
         
-        <div className="admin-header-right" style={{display:'flex', alignItems:'center', gap:'12px'}}>
-          <span style={{fontSize:'12px', color:'#888', display: window.innerWidth > 768 ? 'block' : 'none'}}>{user.email}</span>
-          <Btn size="sm" variant="ghost" onClick={handleLogout}>登出</Btn>
-          <Btn variant="default" onClick={save} disabled={isSaving || !isConnected}>
-              {isSaving ? '更新中...' : '💾 更新資訊'}
+        <div className="admin-header-right">
+          <Btn variant="elevated" onClick={() => setActiveSection('preview')}>
+              <span className="material-symbols-outlined">visibility</span> 預覽與列印
           </Btn>
-          <Btn 
-              variant={activeSection === 'preview' ? 'primary' : 'default'} 
-              onClick={() => setActiveSection('preview')} 
-              style={{
-                  backgroundColor: activeSection === 'preview' ? '#4ade80' : 'transparent',
-                  color: activeSection === 'preview' ? '#0f0f0f' : '#ccc',
-                  borderColor: activeSection === 'preview' ? '#4ade80' : '#2e2e2e'
-              }}
-          >
-              📄 預覽與列印
+          <Btn variant="primary" onClick={save} disabled={isSaving || !isConnected}>
+              <span className="material-symbols-outlined">cloud_upload</span> {isSaving ? '處理中...' : '儲存更新'}
           </Btn>
         </div>
       </div>
 
-      <div className="main-layout" style={{display:'flex', flex:1}}>
-        <div className="no-print sidebar-fixed">
+      <div className="main-layout">
+        <div className="no-print sidebar-fixed hide-scrollbar">
           {navItems.map(item=>(
             <button key={item.id} onClick={()=>setActiveSection(item.id)} style={{
-              width:'100%', textAlign:'left', padding:'10px 12px', borderRadius:'7px', border:'none',
-              background: activeSection===item.id ? '#1e1e1e' : 'transparent',
-              color: activeSection===item.id ? '#4ade80' : '#888',
-              fontSize:'13px', cursor:'pointer', marginBottom:'4px', display:'block'
-            }}>{item.label}</button>
+              width:'100%', textAlign:'left', padding:'12px 20px', borderRadius:'999px', border:'none',
+              background: activeSection===item.id ? 'rgba(138,180,248,0.15)' : 'transparent',
+              color: activeSection===item.id ? 'var(--primary)' : 'var(--text-muted)',
+              fontSize:'14px', fontWeight: activeSection===item.id ? '700' : '500', cursor:'pointer', marginBottom:'6px', 
+              display:'flex', alignItems:'center', gap:'12px', transition:'all 0.2s'
+            }}>
+              <span className="material-symbols-outlined" style={{fontSize:'20px'}}>{item.icon}</span>
+              {item.label}
+            </button>
           ))}
-          <div style={{marginTop:'30px', padding:'10px', borderTop:'1px solid #222'}}>
-             <Btn size="sm" style={{width:'100%'}} onClick={()=>navigator.clipboard.writeText(JSON.stringify(data)).then(()=>showToast('JSON 已複製'))}>複製全域資料</Btn>
+          
+          <div style={{marginTop:'32px', padding:'16px 8px', borderTop:'1px solid var(--border-main)'}}>
+             <Btn size="sm" variant="ghost" style={{width:'100%', justifyContent:'flex-start', paddingLeft:'12px', marginBottom:'8px'}} onClick={()=>navigator.clipboard.writeText(JSON.stringify(data)).then(()=>showToast('JSON 已複製'))}>
+               <span className="material-symbols-outlined" style={{fontSize: '18px'}}>content_copy</span> 備份 JSON
+             </Btn>
+             <Btn size="sm" variant="ghost" style={{width:'100%', justifyContent:'flex-start', paddingLeft:'12px', color:'var(--danger)'}} onClick={() => auth.signOut()}>
+               <span className="material-symbols-outlined" style={{fontSize: '18px'}}>logout</span> 登出系統
+             </Btn>
           </div>
         </div>
-        <div className="content-area" style={{flex:1, padding:'30px', overflowY:'auto', background:'#0f0f0f'}}>
-          <div style={{maxWidth:'800px', margin:'0 auto'}}>{renderSection()}</div>
+        
+        <div className="content-area">
+          <div style={{maxWidth:'860px', margin:'0 auto'}}>{renderSection()}</div>
         </div>
       </div>
-      {toast && <div style={{position:'fixed', bottom:'20px', right:'20px', background:'#0f2d1a', border:'1px solid #4ade80', color:'#4ade80', padding:'10px 20px', borderRadius:'8px', zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.5)'}}>{toast}</div>}
+      
+      {toast && (
+        <div style={{position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', background:'var(--bg-input)', border:'1px solid var(--border-main)', color:'var(--text-main)', padding:'12px 24px', borderRadius:'8px', zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.5)', display:'flex', alignItems:'center', gap:'8px', fontWeight:'500'}}>
+          {toast.includes('❌') ? <span className="material-symbols-outlined" style={{color:'var(--danger)'}}>error</span> : <span className="material-symbols-outlined" style={{color:'var(--success)'}}>check_circle</span>}
+          {toast.replace(/🚀|❌|✅|☁️/g, '')} 
+        </div>
+      )}
     </div>
   );
 }
