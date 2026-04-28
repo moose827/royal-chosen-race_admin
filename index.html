@@ -678,7 +678,7 @@ function App() {
             <div style={{width:'48px', height:'48px', background:'var(--primary)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--on-primary)', margin:'0 auto 16px'}}>
               <span className="material-symbols-outlined" style={{fontSize:'28px'}}>church</span>
             </div>
-            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>週報後台管理系統 v4.0</h2>
+            <h2 style={{color:'var(--text-main)', fontSize:'20px'}}>風一族週報後台管理系統 v4.0</h2>
           </div>
           <form onSubmit={handleLogin}>
             <Field label="帳號 (Email)"><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} /></Field>
@@ -1191,7 +1191,7 @@ function App() {
             <span className="material-symbols-outlined">church</span>
           </div>
           <div style={{display:'flex', flexDirection:'column'}}>
-            <div style={{fontSize:'16px', fontWeight:'700', color:'var(--text-main)'}}>週報後台 v4.0</div>
+            <div style={{fontSize:'16px', fontWeight:'700', color:'var(--text-main)'}}>風一族週報後台管理系統 v4.0</div>
             <div style={{fontSize:'12px', color: isConnected ? 'var(--success)' : 'var(--text-muted)', display:'flex', alignItems:'center', gap:'4px'}}>
                 {isConnected ? <><span className="material-symbols-outlined" style={{fontSize:'14px'}}>cloud_done</span>已連線雲端</> : '○ 載入中...'}
             </div>
