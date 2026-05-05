@@ -966,9 +966,43 @@ function App() {
         </Card>
       );
 
-      case 'schedule': return (
+      case 'schedule': 
+        const templates = {
+          communion: [
+            { start: "09:30", end: "09:50", task: "敬拜讚美" },
+            { start: "09:50", end: "09:55", task: "教會消息" },
+            { start: "09:55", end: "10:45", task: "講台信息" },
+            { start: "10:45", end: "11:05", task: "擘餅聚會" },
+            { start: "11:05", end: "11:30", task: "祝福代禱" }
+          ],
+          regular: [
+            { start: "09:30", end: "09:50", task: "敬拜讚美" },
+            { start: "09:50", end: "09:55", task: "教會消息" },
+            { start: "09:55", end: "10:45", task: "講台信息" },
+            { start: "10:45", end: "11:30", task: "祝福代禱" }
+          ]
+        };
+
+        const applyTemplate = (type) => {
+          if (confirm(`確定要套用「${type === 'communion' ? '擘餅週' : '非擘餅週'}」流程嗎？這將覆蓋現有內容。`)) {
+            update('schedule', templates[type]);
+            showToast(`✅ 已套用${type === 'communion' ? '擘餅週' : '非擘餅週'}流程`);
+          }
+        };
+
+        return (
         <Card>
           <SectionTitle>聚會流程</SectionTitle>
+          
+          {/* 快速套用按鈕區 */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', padding: '12px', background: 'rgba(138,180,248,0.05)', borderRadius: '12px', border: '1px solid var(--border-main)', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', marginRight: '8px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', marginRight: '4px' }}>auto_fix</span> 快速套用：
+            </div>
+            <Btn size="sm" variant="default" onClick={() => applyTemplate('communion')}>🍪 擘餅週套餐</Btn>
+            <Btn size="sm" variant="default" onClick={() => applyTemplate('regular')}>📖 非擘餅週套餐</Btn>
+          </div>
+
           {data.schedule.map((item, idx)=>(
             <div key={idx} className="list-item-row schedule-grid">
               <div className="idx" style={{color:'var(--text-muted)', fontWeight:'bold', textAlign:'center'}}>{idx+1}</div>
@@ -994,7 +1028,7 @@ function App() {
               </div>
             </div>
           ))}
-          {data.schedule.length < 5 ? (
+          {data.schedule.length < 6 ? (
             <Btn size="lg" variant="dashed" onClick={()=>{
               const n = [...data.schedule, {start:'', end:'', task:''}]; update('schedule', n);
             }} style={{ width: '100%', borderRadius: '12px', marginTop:'12px' }}>
@@ -1002,7 +1036,7 @@ function App() {
             </Btn>
           ) : (
             <div style={{ textAlign: 'center', color: 'var(--danger)', fontSize: '13px', marginTop: '16px', padding: '12px', background: 'rgba(242,139,130,0.1)', borderRadius: '12px', border: '1px dashed var(--danger)' }}>
-              🔒 聚會流程已達上限 (最多 5 列)，以確保版面正常顯示。
+              🔒 聚會流程已達上限，以確保版面正常顯示。
             </div>
           )}
         </Card>
